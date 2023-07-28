@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	crClient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 
 	corev1alpha1 "package-operator.run/apis/core/v1alpha1"
@@ -29,6 +29,9 @@ import (
 var defaultNamespace = "default"
 
 func TestObjectTemplate_creationDeletion_packages(t *testing.T) {
+	ctx := logr.NewContext(context.Background(), testr.New(t))
+	testEnv := newTestEnv(ctx, t)
+
 	cm1Key := "database"
 	cm1Destination := "database"
 	cm1Value := "big-database"
@@ -38,7 +41,7 @@ func TestObjectTemplate_creationDeletion_packages(t *testing.T) {
 
 	cm2Key := "testStubImage"
 	cm2Destination := "testStubImage"
-	cm2Value := TestStubImage
+	cm2Value := testEnv.TestStubImage
 	cm2Name := "config-map-2"
 	cm2, cm2Source := createCMAndObjectTemplateSource(cm2Key, cm2Destination, cm2Value, cm2Name)
 
@@ -56,7 +59,7 @@ spec:
   config:
     %s: {{ .config.%s }}
     %s: {{ .config.%s }}
-    %s: {{ %s }}`, SuccessTestPackageImage,
+    %s: {{ %s }}`, testEnv.SuccessTestPackageImage,
 		cm1Destination, cm1Destination,
 		cm2Destination, cm2Destination,
 		kubernetesKey, kubernetesPath)
@@ -85,7 +88,7 @@ spec:
   config:
     %s: {{ .config.%s }}
     %s: {{ .config.%s }}
-    %s: {{ %s }}`, SuccessTestPackageImage,
+    %s: {{ %s }}`, testEnv.SuccessTestPackageImage,
 		cm1Destination, cm1Destination,
 		cm2Destination, cm2Destination,
 		kubernetesKey, kubernetesPath,
@@ -144,17 +147,16 @@ spec:
 		},
 	}
 
-	ctx := logr.NewContext(context.Background(), testr.New(t))
-	err := Client.Create(ctx, &cm1)
+	err := testEnv.Client.Create(ctx, &cm1)
 	require.NoError(t, err)
-	defer cleanupOnSuccess(ctx, t, &cm1)
+	defer cleanupOnSuccess(ctx, t, &cm1, testEnv)
 
-	err = Client.Create(ctx, &cm2)
+	err = testEnv.Client.Create(ctx, &cm2)
 	require.NoError(t, err)
-	defer cleanupOnSuccess(ctx, t, &cm2)
-	err = Client.Create(ctx, &objectTemplate)
+	defer cleanupOnSuccess(ctx, t, &cm2, testEnv)
+	err = testEnv.Client.Create(ctx, &objectTemplate)
 	require.NoError(t, err)
-	defer cleanupOnSuccess(ctx, t, &objectTemplate)
+	defer cleanupOnSuccess(ctx, t, &objectTemplate, testEnv)
 
 	// Test Package
 	pkg := &corev1alpha1.Package{}
@@ -162,11 +164,11 @@ spec:
 	pkg.Namespace = defaultNamespace
 
 	require.NoError(t,
-		Waiter.WaitForObject(ctx, pkg, "to be created", func(obj client.Object) (done bool, err error) {
+		testEnv.Waiter.WaitForObject(ctx, pkg, "to be created", func(obj crClient.Object) (done bool, err error) {
 			return true, nil
 		}, dev.WithTimeout(20*time.Second)))
 
-	assert.NoError(t, Client.Get(ctx, client.ObjectKeyFromObject(pkg), pkg))
+	assert.NoError(t, testEnv.Client.Get(ctx, crClient.ObjectKeyFromObject(pkg), pkg))
 	packageConfig := map[string]interface{}{}
 
 	assert.NoError(t, yaml.Unmarshal(pkg.Spec.Config.Raw, &packageConfig))
@@ -177,35 +179,35 @@ spec:
 	// Patch config map
 
 	patch := fmt.Sprintf(`{"data":{"%s":"%s"}}`, cm1Key, cm1PatchedValue)
-	err = Client.Patch(ctx, &cm1, client.RawPatch(types.MergePatchType, []byte(patch)))
+	err = testEnv.Client.Patch(ctx, &cm1, crClient.RawPatch(types.MergePatchType, []byte(patch)))
 	require.NoError(t, err)
 
 	require.NoError(t,
-		Waiter.WaitForObject(ctx, pkg, "to get to second generation", func(obj client.Object) (done bool, err error) {
+		testEnv.Waiter.WaitForObject(ctx, pkg, "to get to second generation", func(obj crClient.Object) (done bool, err error) {
 			waitPkg := obj.(*corev1alpha1.Package)
 			return waitPkg.GetGeneration() == 2, nil
 		}))
 
 	// check that config value was updated
-	assert.NoError(t, Client.Get(ctx, client.ObjectKeyFromObject(pkg), pkg))
+	assert.NoError(t, testEnv.Client.Get(ctx, crClient.ObjectKeyFromObject(pkg), pkg))
 	packageConfig2 := map[string]interface{}{}
 
 	assert.NoError(t, yaml.Unmarshal(pkg.Spec.Config.Raw, &packageConfig2))
 	assert.Equal(t, cm1PatchedValue, packageConfig2[cm1Destination])
 
 	// Test ClusterPackage
-	err = Client.Create(ctx, &clusterObjectTemplate)
-	defer cleanupOnSuccess(ctx, t, &clusterObjectTemplate)
+	err = testEnv.Client.Create(ctx, &clusterObjectTemplate)
+	defer cleanupOnSuccess(ctx, t, &clusterObjectTemplate, testEnv)
 	require.NoError(t, err)
 	clusterPkg := &corev1alpha1.ClusterPackage{}
 	clusterPkg.Name = "cluster-test-stub"
 
 	require.NoError(t,
-		Waiter.WaitForObject(ctx, clusterPkg, "to be created", func(obj client.Object) (done bool, err error) {
+		testEnv.Waiter.WaitForObject(ctx, clusterPkg, "to be created", func(obj crClient.Object) (done bool, err error) {
 			return true, nil
 		}, dev.WithTimeout(20*time.Second)))
 
-	assert.NoError(t, Client.Get(ctx, client.ObjectKeyFromObject(clusterPkg), clusterPkg))
+	assert.NoError(t, testEnv.Client.Get(ctx, crClient.ObjectKeyFromObject(clusterPkg), clusterPkg))
 	clusterPackageConfig := map[string]interface{}{}
 	assert.NoError(t, yaml.Unmarshal(clusterPkg.Spec.Config.Raw, &clusterPackageConfig))
 	assert.Equal(t, cm1PatchedValue, clusterPackageConfig[cm1Destination])
@@ -213,19 +215,19 @@ spec:
 	assert.Equal(t, kubernetesValue, packageConfig[kubernetesKey])
 
 	// Test Deployment
-	err = Client.Create(ctx, &deploymentObjectTemplate)
-	defer cleanupOnSuccess(ctx, t, &deploymentObjectTemplate)
+	err = testEnv.Client.Create(ctx, &deploymentObjectTemplate)
+	defer cleanupOnSuccess(ctx, t, &deploymentObjectTemplate, testEnv)
 	require.NoError(t, err)
 	deployment := &appsv1.Deployment{}
 	deployment.Name = "nginx-deployment"
 	deployment.Namespace = defaultNamespace
 
 	require.NoError(t,
-		Waiter.WaitForObject(ctx, deployment, "to be created", func(obj client.Object) (done bool, err error) {
+		testEnv.Waiter.WaitForObject(ctx, deployment, "to be created", func(obj crClient.Object) (done bool, err error) {
 			return true, nil
 		}, dev.WithTimeout(20*time.Second)))
 
-	require.NoError(t, Client.Get(ctx, client.ObjectKeyFromObject(deployment), deployment))
+	require.NoError(t, testEnv.Client.Get(ctx, crClient.ObjectKeyFromObject(deployment), deployment))
 	envVar := deployment.Spec.Template.Spec.Containers[0].Env[0]
 	assert.Equal(t, cm1PatchedValue, envVar.Value)
 }
@@ -263,6 +265,8 @@ const pw = "password"
 
 func TestObjectTemplate_secretBase64Encoded(t *testing.T) {
 	ctx := logr.NewContext(context.Background(), testr.New(t))
+	testEnv := newTestEnv(ctx, t)
+
 	secretName := "object-template-secret"
 	secretKey := pw
 	secretDestination := pw
@@ -281,7 +285,7 @@ func TestObjectTemplate_secretBase64Encoded(t *testing.T) {
 			secretKey: secretValue,
 		},
 	}
-	secretGVK, err := apiutil.GVKForObject(&secret, Scheme)
+	secretGVK, err := apiutil.GVKForObject(&secret, testEnv.Scheme)
 	require.NoError(t, err)
 	secret.SetGroupVersionKind(secretGVK)
 	secretSource := corev1alpha1.ObjectTemplateSource{
@@ -305,7 +309,7 @@ spec:
   image: %s
   config:
     testStubImage: %s
-    %s: {{ b64dec .config.%s }}`, packageName, SuccessTestPackageImage, TestStubImage, secretDestination, secretDestination)
+    %s: {{ b64dec .config.%s }}`, packageName, testEnv.SuccessTestPackageImage, testEnv.TestStubImage, secretDestination, secretDestination)
 
 	objectTemplateName := "object-template-password"
 	objectTemplate := corev1alpha1.ObjectTemplate{
@@ -320,26 +324,26 @@ spec:
 			},
 		},
 	}
-	objectTemplateGVK, err := apiutil.GVKForObject(&objectTemplate, Scheme)
+	objectTemplateGVK, err := apiutil.GVKForObject(&objectTemplate, testEnv.Scheme)
 	require.NoError(t, err)
 	objectTemplate.SetGroupVersionKind(objectTemplateGVK)
 
-	require.NoError(t, Client.Create(ctx, &secret))
-	defer cleanupOnSuccess(ctx, t, &secret)
+	require.NoError(t, testEnv.Client.Create(ctx, &secret))
+	defer cleanupOnSuccess(ctx, t, &secret, testEnv)
 
-	require.NoError(t, Client.Create(ctx, &objectTemplate))
-	defer cleanupOnSuccess(ctx, t, &objectTemplate)
+	require.NoError(t, testEnv.Client.Create(ctx, &objectTemplate))
+	defer cleanupOnSuccess(ctx, t, &objectTemplate, testEnv)
 
 	pkg := &corev1alpha1.Package{}
 	pkg.Name = packageName
 	pkg.Namespace = defaultNamespace
 
 	require.NoError(t,
-		Waiter.WaitForObject(ctx, pkg, "to be created", func(obj client.Object) (done bool, err error) {
+		testEnv.Waiter.WaitForObject(ctx, pkg, "to be created", func(obj crClient.Object) (done bool, err error) {
 			return true, nil
 		}, dev.WithTimeout(20*time.Second)))
 
-	assert.NoError(t, Client.Get(ctx, client.ObjectKeyFromObject(pkg), pkg))
+	assert.NoError(t, testEnv.Client.Get(ctx, crClient.ObjectKeyFromObject(pkg), pkg))
 	packageConfig := map[string]interface{}{}
 
 	assert.NoError(t, yaml.Unmarshal(pkg.Spec.Config.Raw, &packageConfig))
@@ -348,6 +352,7 @@ spec:
 
 func TestObjectTemplate_waitsForSource(t *testing.T) {
 	ctx := logr.NewContext(context.Background(), testr.New(t))
+	testEnv := newTestEnv(ctx, t)
 	secretName := "secret"
 	secretKey := pw
 	secretDestination := pw
@@ -366,7 +371,7 @@ func TestObjectTemplate_waitsForSource(t *testing.T) {
 			secretKey: secretValue,
 		},
 	}
-	secretGVK, err := apiutil.GVKForObject(&secret, Scheme)
+	secretGVK, err := apiutil.GVKForObject(&secret, testEnv.Scheme)
 	require.NoError(t, err)
 	secret.SetGroupVersionKind(secretGVK)
 	secretSource := corev1alpha1.ObjectTemplateSource{
@@ -403,30 +408,30 @@ data:
 			},
 		},
 	}
-	objectTemplateGVK, err := apiutil.GVKForObject(&objectTemplate, Scheme)
+	objectTemplateGVK, err := apiutil.GVKForObject(&objectTemplate, testEnv.Scheme)
 	require.NoError(t, err)
 	objectTemplate.SetGroupVersionKind(objectTemplateGVK)
 
-	require.NoError(t, Client.Create(ctx, &objectTemplate))
-	defer cleanupOnSuccess(ctx, t, &objectTemplate)
+	require.NoError(t, testEnv.Client.Create(ctx, &objectTemplate))
+	defer cleanupOnSuccess(ctx, t, &objectTemplate, testEnv)
 
 	cm := &corev1.ConfigMap{}
 	cm.Name = cmName
 	cm.Namespace = defaultNamespace
 
 	require.NoError(t,
-		Waiter.WaitForObject(ctx, cm, "to be created", func(obj client.Object) (done bool, err error) {
+		testEnv.Waiter.WaitForObject(ctx, cm, "to be created", func(obj crClient.Object) (done bool, err error) {
 			return true, nil
 		}, dev.WithTimeout(20*time.Second)))
 
-	assert.NoError(t, Client.Get(ctx, client.ObjectKeyFromObject(cm), cm))
+	assert.NoError(t, testEnv.Client.Get(ctx, crClient.ObjectKeyFromObject(cm), cm))
 	assert.Equal(t, "", cm.Data["test"])
 
-	require.NoError(t, Client.Create(ctx, &secret))
-	defer cleanupOnSuccess(ctx, t, &secret)
+	require.NoError(t, testEnv.Client.Create(ctx, &secret))
+	defer cleanupOnSuccess(ctx, t, &secret, testEnv)
 
 	require.NoError(t,
-		Waiter.WaitForObject(ctx, cm, "to be updated", func(obj client.Object) (done bool, err error) {
+		testEnv.Waiter.WaitForObject(ctx, cm, "to be updated", func(obj crClient.Object) (done bool, err error) {
 			upatedCM := obj.(*corev1.ConfigMap)
 			return upatedCM.Data["test"] == secretValue, nil
 		}, dev.WithTimeout(60*time.Second)))

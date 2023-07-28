@@ -18,7 +18,8 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/strings/slices"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	crClient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 
 	corev1alpha1 "package-operator.run/apis/core/v1alpha1"
@@ -27,6 +28,7 @@ import (
 
 func TestObjectDeployment_availability_and_hash_collision(t *testing.T) {
 	ctx := logr.NewContext(context.Background(), testr.New(t))
+	testEnv := newTestEnv(ctx, t)
 
 	testCases := []struct {
 		deploymentRevision           int
@@ -46,7 +48,7 @@ func TestObjectDeployment_availability_and_hash_collision(t *testing.T) {
 					Name: "phase-1",
 					Objects: []corev1alpha1.ObjectSetObject{
 						{
-							Object: cmTemplate("cm1", map[string]string{"name": "cm1"}, t),
+							Object: cmTemplate(t, "cm1", map[string]string{"name": "cm1"}, testEnv.Scheme),
 						},
 					},
 				},
@@ -54,7 +56,7 @@ func TestObjectDeployment_availability_and_hash_collision(t *testing.T) {
 					Name: "phase-2",
 					Objects: []corev1alpha1.ObjectSetObject{
 						{
-							Object: cmTemplate("cm2", map[string]string{"name": "cm2"}, t),
+							Object: cmTemplate(t, "cm2", map[string]string{"name": "cm2"}, testEnv.Scheme),
 						},
 					},
 				},
@@ -74,7 +76,7 @@ func TestObjectDeployment_availability_and_hash_collision(t *testing.T) {
 					Name: "phase-1",
 					Objects: []corev1alpha1.ObjectSetObject{
 						{
-							Object: cmTemplate("cm1", map[string]string{"name": "cm2"}, t),
+							Object: cmTemplate(t, "cm1", map[string]string{"name": "cm2"}, testEnv.Scheme),
 						},
 					},
 				},
@@ -82,7 +84,7 @@ func TestObjectDeployment_availability_and_hash_collision(t *testing.T) {
 					Name: "phase-2",
 					Objects: []corev1alpha1.ObjectSetObject{
 						{
-							Object: cmTemplate("cm2", map[string]string{"name": "fails"}, t),
+							Object: cmTemplate(t, "cm2", map[string]string{"name": "fails"}, testEnv.Scheme),
 						},
 					},
 				},
@@ -115,28 +117,28 @@ func TestObjectDeployment_availability_and_hash_collision(t *testing.T) {
 			},
 		},
 	}
-	require.NoError(t, Client.Create(ctx, existingConflictObjectSet))
-	cleanupOnSuccess(ctx, t, existingConflictObjectSet)
+	require.NoError(t, testEnv.Client.Create(ctx, existingConflictObjectSet))
+	cleanupOnSuccess(ctx, t, existingConflictObjectSet, testEnv)
 
 	for _, testCase := range testCases {
 		t.Logf("Running revision: %d \n", testCase.deploymentRevision)
 		concernedDeployment := objectDeploymentTemplate(testCase.phases, testCase.probe, "test-objectdeployment")
 		currentInClusterDeployment := &corev1alpha1.ObjectDeployment{}
-		err := Client.Get(ctx, client.ObjectKeyFromObject(concernedDeployment), currentInClusterDeployment)
+		err := testEnv.Client.Get(ctx, crClient.ObjectKeyFromObject(concernedDeployment), currentInClusterDeployment)
 		if errors.IsNotFound(err) {
 			// Create the deployment
-			require.NoError(t, Client.Create(ctx, concernedDeployment))
+			require.NoError(t, testEnv.Client.Create(ctx, concernedDeployment))
 		} else {
 			// Update the existing deployment
 			concernedDeployment.ResourceVersion = currentInClusterDeployment.ResourceVersion
-			require.NoError(t, Client.Update(ctx, concernedDeployment))
+			require.NoError(t, testEnv.Client.Update(ctx, concernedDeployment))
 		}
-		cleanupOnSuccess(ctx, t, concernedDeployment)
+		cleanupOnSuccess(ctx, t, concernedDeployment, testEnv)
 
 		// Assert that all the expected conditions are reported
 		for expectedCond, expectedStatus := range testCase.expectedDeploymentConditions {
 			require.NoError(t,
-				Waiter.WaitForCondition(ctx,
+				testEnv.Waiter.WaitForCondition(ctx,
 					concernedDeployment,
 					expectedCond,
 					expectedStatus,
@@ -149,8 +151,8 @@ func TestObjectDeployment_availability_and_hash_collision(t *testing.T) {
 		// ObjectSet for the current deployment revision should be present
 		currentObjectSet := &corev1alpha1.ObjectSet{}
 		require.NoError(t,
-			Client.Get(ctx,
-				client.ObjectKey{
+			testEnv.Client.Get(ctx,
+				crClient.ObjectKey{
 					Name:      ExpectedObjectSetName(concernedDeployment),
 					Namespace: concernedDeployment.Namespace,
 				},
@@ -160,7 +162,7 @@ func TestObjectDeployment_availability_and_hash_collision(t *testing.T) {
 
 		// Assert that the ObjectSet for the current revision has the expected availability status
 		require.NoError(t,
-			Waiter.WaitForCondition(ctx,
+			testEnv.Waiter.WaitForCondition(ctx,
 				currentObjectSet,
 				corev1alpha1.ObjectSetAvailable,
 				testCase.expectedRevisionAvailability,
@@ -186,12 +188,12 @@ func TestObjectDeployment_availability_and_hash_collision(t *testing.T) {
 		objectSetSelector, err := metav1.LabelSelectorAsSelector(&labelSelector)
 		require.NoError(t, err)
 		currObjectSetList := &corev1alpha1.ObjectSetList{}
-		err = Client.List(
+		err = testEnv.Client.List(
 			ctx, currObjectSetList,
-			client.MatchingLabelsSelector{
+			crClient.MatchingLabelsSelector{
 				Selector: objectSetSelector,
 			},
-			client.InNamespace(concernedDeployment.GetNamespace()),
+			crClient.InNamespace(concernedDeployment.GetNamespace()),
 		)
 		require.NoError(t, err)
 
@@ -203,7 +205,7 @@ func TestObjectDeployment_availability_and_hash_collision(t *testing.T) {
 			currObjectSetRevision := currObjectSet.Status.Revision
 			if slices.Contains(testCase.expectedArchivedRevisions, fmt.Sprint(currObjectSetRevision)) {
 				require.NoError(t,
-					Waiter.WaitForCondition(ctx,
+					testEnv.Waiter.WaitForCondition(ctx,
 						&currObjectSet,
 						corev1alpha1.ObjectSetArchived,
 						metav1.ConditionTrue,
@@ -230,13 +232,14 @@ func TestObjectDeployment_availability_and_hash_collision(t *testing.T) {
 
 func TestObjectDeployment_external_objects(t *testing.T) {
 	ctx := logr.NewContext(context.Background(), testr.New(t))
+	testEnv := newTestEnv(ctx, t)
 
 	phases := []corev1alpha1.ObjectSetTemplatePhase{
 		{
 			Name: "phase-1",
 			ExternalObjects: []corev1alpha1.ObjectSetObject{
 				{
-					Object: cmTemplate("external-1", nil, t),
+					Object: cmTemplate(t, "external-1", nil, testEnv.Scheme),
 				},
 			},
 		},
@@ -246,26 +249,26 @@ func TestObjectDeployment_external_objects(t *testing.T) {
 
 	concernedDeployment := objectDeploymentTemplate(phases, probe, "test-objectdeployment-external-objects")
 	currentInClusterDeployment := &corev1alpha1.ObjectDeployment{}
-	err := Client.Get(ctx, client.ObjectKeyFromObject(concernedDeployment), currentInClusterDeployment)
+	err := testEnv.Client.Get(ctx, crClient.ObjectKeyFromObject(concernedDeployment), currentInClusterDeployment)
 	if errors.IsNotFound(err) {
 		// Create the deployment
-		require.NoError(t, Client.Create(ctx, concernedDeployment))
+		require.NoError(t, testEnv.Client.Create(ctx, concernedDeployment))
 	} else {
 		// Update the existing deployment
 		concernedDeployment.ResourceVersion = currentInClusterDeployment.ResourceVersion
-		require.NoError(t, Client.Update(ctx, concernedDeployment))
+		require.NoError(t, testEnv.Client.Update(ctx, concernedDeployment))
 	}
-	cleanupOnSuccess(ctx, t, concernedDeployment)
+	cleanupOnSuccess(ctx, t, concernedDeployment, testEnv)
 
 	for _, tc := range []struct {
-		ActualObjects      []client.Object
+		ActualObjects      []crClient.Object
 		AvailabilityStatus metav1.ConditionStatus
 	}{
 		{
 			AvailabilityStatus: metav1.ConditionFalse,
 		},
 		{
-			ActualObjects: []client.Object{
+			ActualObjects: []crClient.Object{
 				&corev1.ConfigMap{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "external-1",
@@ -279,7 +282,7 @@ func TestObjectDeployment_external_objects(t *testing.T) {
 			AvailabilityStatus: metav1.ConditionFalse,
 		},
 		{
-			ActualObjects: []client.Object{
+			ActualObjects: []crClient.Object{
 				&corev1.ConfigMap{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "external-1",
@@ -294,17 +297,17 @@ func TestObjectDeployment_external_objects(t *testing.T) {
 		},
 	} {
 		for _, obj := range tc.ActualObjects {
-			err := Client.Create(ctx, obj)
+			err := testEnv.Client.Create(ctx, obj)
 			if errors.IsAlreadyExists(err) {
-				err = Client.Update(ctx, obj)
+				err = testEnv.Client.Update(ctx, obj)
 			}
 
 			require.NoError(t, err)
-			require.NoError(t, Waiter.WaitForObject(ctx, obj, "creating", func(_ client.Object) (bool, error) { return true, nil }))
+			require.NoError(t, testEnv.Waiter.WaitForObject(ctx, obj, "creating", func(_ crClient.Object) (bool, error) { return true, nil }))
 		}
 
 		require.NoError(t,
-			Waiter.WaitForCondition(ctx,
+			testEnv.Waiter.WaitForCondition(ctx,
 				concernedDeployment,
 				corev1alpha1.ObjectDeploymentAvailable,
 				tc.AvailabilityStatus,
@@ -317,6 +320,8 @@ func TestObjectDeployment_external_objects(t *testing.T) {
 //nolint:maintidx
 func TestObjectDeployment_ObjectSetArchival(t *testing.T) {
 	ctx := logr.NewContext(context.Background(), testr.New(t))
+	testEnv := newTestEnv(ctx, t)
+
 	testCases := []struct {
 		revision                     string
 		phases                       []corev1alpha1.ObjectSetTemplatePhase
@@ -334,7 +339,7 @@ func TestObjectDeployment_ObjectSetArchival(t *testing.T) {
 					Name: "phase-1",
 					Objects: []corev1alpha1.ObjectSetObject{
 						{
-							Object: cmTemplate("cm1", map[string]string{"name": "probe-failure"}, t),
+							Object: cmTemplate(t, "cm1", map[string]string{"name": "probe-failure"}, testEnv.Scheme),
 						},
 					},
 				},
@@ -342,7 +347,7 @@ func TestObjectDeployment_ObjectSetArchival(t *testing.T) {
 					Name: "phase-2",
 					Objects: []corev1alpha1.ObjectSetObject{
 						{
-							Object: deploymentTemplate("nginx-1", "nginx:1.14.1", t),
+							Object: deploymentTemplate(t, "nginx-1", "nginx:1.14.1", testEnv.Scheme),
 						},
 					},
 				},
@@ -362,7 +367,7 @@ func TestObjectDeployment_ObjectSetArchival(t *testing.T) {
 					Name: "phase-1",
 					Objects: []corev1alpha1.ObjectSetObject{
 						{
-							Object: cmTemplate("cm1", map[string]string{"name": "cm1"}, t),
+							Object: cmTemplate(t, "cm1", map[string]string{"name": "cm1"}, testEnv.Scheme),
 						},
 					},
 				},
@@ -370,7 +375,7 @@ func TestObjectDeployment_ObjectSetArchival(t *testing.T) {
 					Name: "phase-2",
 					Objects: []corev1alpha1.ObjectSetObject{
 						{
-							Object: deploymentTemplate("nginx-1", "nginx:1.14.2", t),
+							Object: deploymentTemplate(t, "nginx-1", "nginx:1.14.2", testEnv.Scheme),
 						},
 					},
 				},
@@ -392,7 +397,7 @@ func TestObjectDeployment_ObjectSetArchival(t *testing.T) {
 					Name: "phase-1",
 					Objects: []corev1alpha1.ObjectSetObject{
 						{
-							Object: cmTemplate("cm2", map[string]string{"name": "cm2"}, t),
+							Object: cmTemplate(t, "cm2", map[string]string{"name": "cm2"}, testEnv.Scheme),
 						},
 					},
 				},
@@ -400,7 +405,7 @@ func TestObjectDeployment_ObjectSetArchival(t *testing.T) {
 					Name: "phase-2",
 					Objects: []corev1alpha1.ObjectSetObject{
 						{
-							Object: deploymentTemplate("nginx-2", "invalid-image", t),
+							Object: deploymentTemplate(t, "nginx-2", "invalid-image", testEnv.Scheme),
 						},
 					},
 				},
@@ -428,7 +433,7 @@ func TestObjectDeployment_ObjectSetArchival(t *testing.T) {
 						// 	Object: deploymentTemplate("nginx-2", "nginx:1.14.2", t),
 						// },
 						{
-							Object: secret("secret-1", t),
+							Object: secret(t, "secret-1", testEnv.Scheme),
 						},
 					},
 				},
@@ -436,7 +441,7 @@ func TestObjectDeployment_ObjectSetArchival(t *testing.T) {
 					Name: "phase-2",
 					Objects: []corev1alpha1.ObjectSetObject{
 						{
-							Object: cmTemplate("cm3", map[string]string{"name": "probe-failure"}, t),
+							Object: cmTemplate(t, "cm3", map[string]string{"name": "probe-failure"}, testEnv.Scheme),
 						},
 					},
 				},
@@ -459,7 +464,7 @@ func TestObjectDeployment_ObjectSetArchival(t *testing.T) {
 					Name: "phase-1",
 					Objects: []corev1alpha1.ObjectSetObject{
 						{
-							Object: cmTemplate("cm4", map[string]string{"name": "probe-failure"}, t),
+							Object: cmTemplate(t, "cm4", map[string]string{"name": "probe-failure"}, testEnv.Scheme),
 						},
 					},
 				},
@@ -467,10 +472,10 @@ func TestObjectDeployment_ObjectSetArchival(t *testing.T) {
 					Name: "phase-2",
 					Objects: []corev1alpha1.ObjectSetObject{
 						{
-							Object: deploymentTemplate("nginx-3", "nginx:1.14.2", t),
+							Object: deploymentTemplate(t, "nginx-3", "nginx:1.14.2", testEnv.Scheme),
 						},
 						{
-							Object: secret("secret-1", t),
+							Object: secret(t, "secret-1", testEnv.Scheme),
 						},
 					},
 				},
@@ -493,7 +498,7 @@ func TestObjectDeployment_ObjectSetArchival(t *testing.T) {
 					Name: "phase-1",
 					Objects: []corev1alpha1.ObjectSetObject{
 						{
-							Object: cmTemplate("cm4", map[string]string{"name": "cm4"}, t),
+							Object: cmTemplate(t, "cm4", map[string]string{"name": "cm4"}, testEnv.Scheme),
 						},
 					},
 				},
@@ -501,10 +506,10 @@ func TestObjectDeployment_ObjectSetArchival(t *testing.T) {
 					Name: "phase-2",
 					Objects: []corev1alpha1.ObjectSetObject{
 						{
-							Object: deploymentTemplate("nginx-3", "nginx:1.14.2", t),
+							Object: deploymentTemplate(t, "nginx-3", "nginx:1.14.2", testEnv.Scheme),
 						},
 						{
-							Object: secret("secret-1", t),
+							Object: secret(t, "secret-1", testEnv.Scheme),
 						},
 					},
 				},
@@ -526,21 +531,21 @@ func TestObjectDeployment_ObjectSetArchival(t *testing.T) {
 		t.Logf("Running revision %s \n", testCase.revision)
 		concernedDeployment := objectDeploymentTemplate(testCase.phases, testCase.probes, "test-objectdeployment-1")
 		currentInClusterDeployment := &corev1alpha1.ObjectDeployment{}
-		err := Client.Get(ctx, client.ObjectKeyFromObject(concernedDeployment), currentInClusterDeployment)
+		err := testEnv.Client.Get(ctx, crClient.ObjectKeyFromObject(concernedDeployment), currentInClusterDeployment)
 		if errors.IsNotFound(err) {
 			// Create the deployment
-			require.NoError(t, Client.Create(ctx, concernedDeployment))
+			require.NoError(t, testEnv.Client.Create(ctx, concernedDeployment))
 		} else {
 			// Update the existing deployment
 			concernedDeployment.ResourceVersion = currentInClusterDeployment.ResourceVersion
-			require.NoError(t, Client.Update(ctx, concernedDeployment))
+			require.NoError(t, testEnv.Client.Update(ctx, concernedDeployment))
 		}
 
-		cleanupOnSuccess(ctx, t, concernedDeployment)
+		cleanupOnSuccess(ctx, t, concernedDeployment, testEnv)
 		// Assert that all the expected conditions are reported
 		for expectedCond, expectedStatus := range testCase.expectedDeploymentConditions {
 			require.NoError(t,
-				Waiter.WaitForCondition(ctx,
+				testEnv.Waiter.WaitForCondition(ctx,
 					concernedDeployment,
 					expectedCond,
 					expectedStatus,
@@ -553,8 +558,8 @@ func TestObjectDeployment_ObjectSetArchival(t *testing.T) {
 		// ObjectSet for the current deployment revision should be present
 		currentObjectSet := &corev1alpha1.ObjectSet{}
 		require.NoError(t,
-			Client.Get(ctx,
-				client.ObjectKey{
+			testEnv.Client.Get(ctx,
+				crClient.ObjectKey{
 					Name:      ExpectedObjectSetName(concernedDeployment),
 					Namespace: concernedDeployment.Namespace,
 				},
@@ -564,7 +569,7 @@ func TestObjectDeployment_ObjectSetArchival(t *testing.T) {
 
 		// Assert that the ObjectSet for the current revision has the expected availability status
 		require.NoError(t,
-			Waiter.WaitForCondition(ctx,
+			testEnv.Waiter.WaitForCondition(ctx,
 				currentObjectSet,
 				corev1alpha1.ObjectSetAvailable,
 				testCase.expectedRevisionAvailability,
@@ -589,12 +594,12 @@ func TestObjectDeployment_ObjectSetArchival(t *testing.T) {
 		objectSetSelector, err := metav1.LabelSelectorAsSelector(&labelSelector)
 		require.NoError(t, err)
 		currObjectSetList := &corev1alpha1.ObjectSetList{}
-		err = Client.List(
+		err = testEnv.Client.List(
 			ctx, currObjectSetList,
-			client.MatchingLabelsSelector{
+			crClient.MatchingLabelsSelector{
 				Selector: objectSetSelector,
 			},
-			client.InNamespace(concernedDeployment.GetNamespace()),
+			crClient.InNamespace(concernedDeployment.GetNamespace()),
 		)
 		require.NoError(t, err)
 
@@ -606,7 +611,7 @@ func TestObjectDeployment_ObjectSetArchival(t *testing.T) {
 			currObjectSetRevision := currObjectSet.Status.Revision
 			if slices.Contains(testCase.expectedArchivedRevisions, fmt.Sprint(currObjectSetRevision)) {
 				require.NoError(t,
-					Waiter.WaitForCondition(ctx,
+					testEnv.Waiter.WaitForCondition(ctx,
 						&currObjectSet,
 						corev1alpha1.ObjectSetArchived,
 						metav1.ConditionTrue,
@@ -660,7 +665,9 @@ func objectDeploymentTemplate(
 	}
 }
 
-func cmTemplate(name string, data map[string]string, t require.TestingT) unstructured.Unstructured {
+func cmTemplate(t *testing.T, name string, data map[string]string, scheme *runtime.Scheme) unstructured.Unstructured {
+	t.Helper()
+
 	cm := corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   name,
@@ -668,7 +675,7 @@ func cmTemplate(name string, data map[string]string, t require.TestingT) unstruc
 		},
 		Data: data,
 	}
-	GVK, err := apiutil.GVKForObject(&cm, Scheme)
+	GVK, err := apiutil.GVKForObject(&cm, scheme)
 	require.NoError(t, err)
 	cm.SetGroupVersionKind(GVK)
 
@@ -677,7 +684,9 @@ func cmTemplate(name string, data map[string]string, t require.TestingT) unstruc
 	return unstructured.Unstructured{Object: resObj}
 }
 
-func secret(name string, t require.TestingT) unstructured.Unstructured {
+func secret(t *testing.T, name string, scheme *runtime.Scheme) unstructured.Unstructured {
+	t.Helper()
+
 	secret := corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   name,
@@ -688,7 +697,7 @@ func secret(name string, t require.TestingT) unstructured.Unstructured {
 			"hello": "world",
 		},
 	}
-	GVK, err := apiutil.GVKForObject(&secret, Scheme)
+	GVK, err := apiutil.GVKForObject(&secret, scheme)
 	require.NoError(t, err)
 	secret.SetGroupVersionKind(GVK)
 	resObj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&secret)
@@ -696,7 +705,9 @@ func secret(name string, t require.TestingT) unstructured.Unstructured {
 	return unstructured.Unstructured{Object: resObj}
 }
 
-func deploymentTemplate(deploymentName string, podImage string, t require.TestingT) unstructured.Unstructured {
+func deploymentTemplate(t *testing.T, deploymentName string, podImage string, scheme *runtime.Scheme) unstructured.Unstructured {
+	t.Helper()
+
 	obj := appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   deploymentName,
@@ -723,7 +734,7 @@ func deploymentTemplate(deploymentName string, podImage string, t require.Testin
 		},
 	}
 
-	GVK, err := apiutil.GVKForObject(&obj, Scheme)
+	GVK, err := apiutil.GVKForObject(&obj, scheme)
 	require.NoError(t, err)
 	obj.SetGroupVersionKind(GVK)
 	resObj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&obj)

@@ -1,4 +1,4 @@
-package packageoperator
+package cluster
 
 import (
 	"context"
@@ -14,7 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	crClient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
 	corev1alpha1 "package-operator.run/apis/core/v1alpha1"
@@ -25,15 +25,14 @@ func TestHyperShift(t *testing.T) {
 	// tests that PackageOperator will deploy a new remote-phase-manager
 	// for every ready HyperShift HostedCluster.
 	ctx := logr.NewContext(context.Background(), testr.New(t))
+	testEnv := newTestEnv(ctx, t)
 
 	hostedClusterCRDBytes, err := os.ReadFile("testdata/hostedclusters.crd.yaml")
 	require.NoError(t, err)
 	hostedClusterCRD := &unstructured.Unstructured{}
 	require.NoError(t, yaml.Unmarshal(hostedClusterCRDBytes, hostedClusterCRD))
-	require.NoError(t, Client.Create(ctx, hostedClusterCRD))
-	require.NoError(t, Waiter.WaitForCondition(ctx, hostedClusterCRD, "Established", metav1.ConditionTrue))
-
-	require.NoError(t, initClients(ctx))
+	require.NoError(t, testEnv.Client.Create(ctx, hostedClusterCRD))
+	require.NoError(t, testEnv.Waiter.WaitForCondition(ctx, hostedClusterCRD, "Established", metav1.ConditionTrue))
 
 	hc := &hypershiftv1beta1.HostedCluster{
 		ObjectMeta: metav1.ObjectMeta{
@@ -42,9 +41,9 @@ func TestHyperShift(t *testing.T) {
 		},
 	}
 
-	err = Client.Create(ctx, hc)
+	err = testEnv.Client.Create(ctx, hc)
 	require.NoError(t, err)
-	defer cleanupOnSuccess(ctx, t, hc)
+	defer cleanupOnSuccess(ctx, t, hc, testEnv)
 
 	// Simulate HS cluster namespace setup.
 	ns := &corev1.Namespace{
@@ -52,13 +51,13 @@ func TestHyperShift(t *testing.T) {
 			Name: "default-test-hc",
 		},
 	}
-	err = Client.Create(ctx, ns)
+	err = testEnv.Client.Create(ctx, ns)
 	require.NoError(t, err)
-	defer cleanupOnSuccess(ctx, t, ns)
+	defer cleanupOnSuccess(ctx, t, ns, testEnv)
 
 	// copy service-network-admin-kubeconfig from default namespace
 	defaultSecret := &corev1.Secret{}
-	require.NoError(t, Client.Get(ctx, client.ObjectKey{
+	require.NoError(t, testEnv.Client.Get(ctx, crClient.ObjectKey{
 		Name:      "service-network-admin-kubeconfig",
 		Namespace: "default",
 	}, defaultSecret))
@@ -69,14 +68,14 @@ func TestHyperShift(t *testing.T) {
 		},
 		Data: defaultSecret.Data,
 	}
-	require.NoError(t, Client.Create(ctx, hcSecret))
+	require.NoError(t, testEnv.Client.Create(ctx, hcSecret))
 
 	meta.SetStatusCondition(&hc.Status.Conditions, metav1.Condition{
 		Type:   hypershiftv1beta1.HostedClusterAvailable,
 		Reason: "Success",
 		Status: metav1.ConditionTrue,
 	})
-	err = Client.Status().Update(ctx, hc)
+	err = testEnv.Client.Status().Update(ctx, hc)
 	require.NoError(t, err)
 
 	// Wait for roll out
@@ -88,12 +87,12 @@ func TestHyperShift(t *testing.T) {
 	}
 	// longer timeout because PKO is restarting to enable HyperShift integration and needs a few seconds for leader election.
 	require.NoError(t,
-		Waiter.WaitForCondition(ctx, pkg, corev1alpha1.PackageAvailable, metav1.ConditionTrue, dev.WithTimeout(100*time.Second)))
+		testEnv.Waiter.WaitForCondition(ctx, pkg, corev1alpha1.PackageAvailable, metav1.ConditionTrue, dev.WithTimeout(100*time.Second)))
 	// Test ObjectSetPhase integration
 	t.Run("ObjectSetSetupPauseTeardown", func(t *testing.T) {
-		runObjectSetSetupPauseTeardownTest(t, ns.Name, "hosted-cluster")
+		runObjectSetSetupPauseTeardownTest(t, ns.Name, "hosted-cluster", testEnv)
 	})
 	t.Run("ObjectSetHandover", func(t *testing.T) {
-		runObjectSetHandoverTest(t, ns.Name, "hosted-cluster")
+		runObjectSetHandoverTest(t, ns.Name, "hosted-cluster", testEnv)
 	})
 }

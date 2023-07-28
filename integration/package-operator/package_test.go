@@ -13,17 +13,20 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	crClient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	corev1alpha1 "package-operator.run/apis/core/v1alpha1"
 	manifestsv1alpha1 "package-operator.run/apis/manifests/v1alpha1"
 )
 
 func TestPackage_success(t *testing.T) {
+	ctx := logr.NewContext(context.Background(), testr.New(t))
+	testEnv := newTestEnv(ctx, t)
+
 	tests := []struct {
 		name             string
-		pkg              client.Object
-		objectDeployment client.Object
+		pkg              crClient.Object
+		objectDeployment crClient.Object
 		postCheck        func(ctx context.Context, t *testing.T)
 	}{
 		{
@@ -34,9 +37,9 @@ func TestPackage_success(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: corev1alpha1.PackageSpec{
-					Image: SuccessTestPackageImage,
+					Image: testEnv.SuccessTestPackageImage,
 					Config: &runtime.RawExtension{
-						Raw: []byte(fmt.Sprintf(`{"testStubImage": "%s"}`, TestStubImage)),
+						Raw: []byte(fmt.Sprintf(`{"testStubImage": "%s"}`, testEnv.TestStubImage)),
 					},
 				},
 			},
@@ -46,7 +49,7 @@ func TestPackage_success(t *testing.T) {
 
 				// Test if environment information is injected successfully.
 				deploy := &appsv1.Deployment{}
-				err := Client.Get(ctx, client.ObjectKey{
+				err := testEnv.Client.Get(ctx, crClient.ObjectKey{
 					Name:      "test-stub-success",
 					Namespace: "default",
 				}, deploy)
@@ -66,9 +69,9 @@ func TestPackage_success(t *testing.T) {
 					Name: "success",
 				},
 				Spec: corev1alpha1.PackageSpec{
-					Image: SuccessTestPackageImage,
+					Image: testEnv.SuccessTestPackageImage,
 					Config: &runtime.RawExtension{
-						Raw: []byte(fmt.Sprintf(`{"testStubImage": "%s"}`, TestStubImage)),
+						Raw: []byte(fmt.Sprintf(`{"testStubImage": "%s"}`, testEnv.TestStubImage)),
 					},
 				},
 			},
@@ -85,9 +88,9 @@ func TestPackage_success(t *testing.T) {
 					},
 				},
 				Spec: corev1alpha1.PackageSpec{
-					Image: SuccessTestPackageImage,
+					Image: testEnv.SuccessTestPackageImage,
 					Config: &runtime.RawExtension{
-						Raw: []byte(fmt.Sprintf(`{"testStubImage": "%s"}`, TestStubImage)),
+						Raw: []byte(fmt.Sprintf(`{"testStubImage": "%s"}`, testEnv.TestStubImage)),
 					},
 				},
 			},
@@ -95,7 +98,7 @@ func TestPackage_success(t *testing.T) {
 			postCheck: func(ctx context.Context, t *testing.T) {
 				t.Helper()
 				sliceList := &corev1alpha1.ObjectSliceList{}
-				err := Client.List(ctx, sliceList)
+				err := testEnv.Client.List(ctx, sliceList)
 				require.NoError(t, err)
 
 				// Just a Deployment
@@ -108,14 +111,14 @@ func TestPackage_success(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "success-slices",
 					Annotations: map[string]string{
-						"package-operator.run/test-stub-image":            TestStubImage,
+						"package-operator.run/test-stub-image":            testEnv.TestStubImage,
 						"packages.package-operator.run/chunking-strategy": "EachObject",
 					},
 				},
 				Spec: corev1alpha1.PackageSpec{
-					Image: SuccessTestPackageImage,
+					Image: testEnv.SuccessTestPackageImage,
 					Config: &runtime.RawExtension{
-						Raw: []byte(fmt.Sprintf(`{"testStubImage": "%s"}`, TestStubImage)),
+						Raw: []byte(fmt.Sprintf(`{"testStubImage": "%s"}`, testEnv.TestStubImage)),
 					},
 				},
 			},
@@ -123,7 +126,7 @@ func TestPackage_success(t *testing.T) {
 			postCheck: func(ctx context.Context, t *testing.T) {
 				t.Helper()
 				sliceList := &corev1alpha1.ClusterObjectSliceList{}
-				err := Client.List(ctx, sliceList)
+				err := testEnv.Client.List(ctx, sliceList)
 				require.NoError(t, err)
 
 				// Namespace and Deployment
@@ -138,19 +141,19 @@ func TestPackage_success(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			ctx := logr.NewContext(context.Background(), testr.New(t))
 
-			require.NoError(t, Client.Create(ctx, test.pkg))
-			cleanupOnSuccess(ctx, t, test.pkg)
+			require.NoError(t, testEnv.Client.Create(ctx, test.pkg))
+			cleanupOnSuccess(ctx, t, test.pkg, testEnv)
 
 			require.NoError(t,
-				Waiter.WaitForCondition(ctx, test.pkg, corev1alpha1.PackageUnpacked, metav1.ConditionTrue))
+				testEnv.Waiter.WaitForCondition(ctx, test.pkg, corev1alpha1.PackageUnpacked, metav1.ConditionTrue))
 			require.NoError(t,
-				Waiter.WaitForCondition(ctx, test.pkg, corev1alpha1.PackageAvailable, metav1.ConditionTrue))
+				testEnv.Waiter.WaitForCondition(ctx, test.pkg, corev1alpha1.PackageAvailable, metav1.ConditionTrue))
 
 			// Condition Mapping from Deployment
 			require.NoError(t,
-				Waiter.WaitForCondition(ctx, test.pkg, "my-prefix/Progressing", metav1.ConditionTrue))
+				testEnv.Waiter.WaitForCondition(ctx, test.pkg, "my-prefix/Progressing", metav1.ConditionTrue))
 
-			require.NoError(t, Client.Get(ctx, client.ObjectKey{
+			require.NoError(t, testEnv.Client.Get(ctx, crClient.ObjectKey{
 				Name: test.pkg.GetName(), Namespace: test.pkg.GetNamespace(),
 			}, test.objectDeployment))
 

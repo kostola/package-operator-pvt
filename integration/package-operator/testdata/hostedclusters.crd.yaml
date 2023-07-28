@@ -61,7 +61,7 @@ spec:
             type: string
           kind:
             description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
+              object represents. Servers may infer this from the endpoint the testEnv.Client
               submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
             type: string
           metadata:
@@ -85,7 +85,7 @@ spec:
                   webhook endpoint for a cluster to process cluster audit events.
                   It references a secret that contains the webhook information for
                   the audit webhook endpoint. It is a secret because if the endpoint
-                  has mTLS the kubeconfig will contain client keys. The kubeconfig
+                  has mTLS the kubeconfig will contain testEnv.Client keys. The kubeconfig
                   needs to be stored in the secret with a secret key name that corresponds
                   to the constant AuditWebhookKubeconfigKey. \n This field is currently
                   only supported on the IBMCloud platform."
@@ -146,7 +146,7 @@ spec:
                 properties:
                   apiServer:
                     description: APIServer holds configuration (like serving certificates,
-                      client CA and CORS domains) shared by all API servers in the
+                      testEnv.Client CA and CORS domains) shared by all API servers in the
                       system, among them especially kube-apiserver and openshift-apiserver.
                     properties:
                       additionalCORSAllowedOrigins:
@@ -246,10 +246,10 @@ spec:
                       clientCA:
                         description: 'clientCA references a ConfigMap containing a
                           certificate bundle for the signers that will be recognized
-                          for incoming client certificates in addition to the operator
+                          for incoming testEnv.Client certificates in addition to the operator
                           managed signers. If this is empty, then only operator managed
                           signers are valid. You usually only have to set this if
-                          you have your own PKI you wish to honor client certificates
+                          you have your own PKI you wish to honor testEnv.Client certificates
                           from. The ConfigMap must exist in the openshift-config namespace
                           and contain the following required fields: - ConfigMap.Data["ca-bundle.crt"]
                           - CA bundle.'
@@ -295,10 +295,10 @@ spec:
                               the TLS cert info for serving secure traffic to specific
                               hostnames. If no named certificates are provided, or
                               no named certificates match the server name as understood
-                              by a client, the defaultServingCertificate will be used.
+                              by a testEnv.Client, the defaultServingCertificate will be used.
                             items:
                               description: APIServerNamedServingCert maps a server
-                                DNS name, as understood by a client, to a certificate.
+                                DNS name, as understood by a testEnv.Client, to a certificate.
                               properties:
                                 names:
                                   description: names is a optional list of explicit
@@ -900,8 +900,8 @@ spec:
                                 as HSTS hosts. If set to 0 and includeSubdomains is
                                 specified, all subdomains of the host are also removed
                                 as HSTS hosts. maxAge is a time-to-live value, and
-                                if this policy is not refreshed on a client, the HSTS
-                                policy will eventually expire on that client.
+                                if this policy is not refreshed on a testEnv.Client, the HSTS
+                                policy will eventually expire on that testEnv.Client.
                               properties:
                                 largestMaxAge:
                                   description: The largest allowed value (in seconds)
@@ -977,11 +977,11 @@ spec:
                               type: object
                               x-kubernetes-map-type: atomic
                             preloadPolicy:
-                              description: preloadPolicy directs the client to include
+                              description: preloadPolicy directs the testEnv.Client to include
                                 hosts in its host preload list so that it never needs
                                 to do an initial load to get the HSTS header (note
                                 that this is not defined in RFC 6797 and is therefore
-                                client implementation-dependent).
+                                testEnv.Client implementation-dependent).
                               enum:
                               - RequirePreload
                               - RequireNoPreload
@@ -1127,7 +1127,7 @@ spec:
                                 tlsClientCert:
                                   description: tlsClientCert is an optional reference
                                     to a secret by name that contains the PEM-encoded
-                                    TLS client certificate to present when connecting
+                                    TLS testEnv.Client certificate to present when connecting
                                     to the server. The key "tls.crt" is used to locate
                                     the data. If specified and the secret or expected
                                     key is not found, the identity provider is not
@@ -1145,7 +1145,7 @@ spec:
                                 tlsClientKey:
                                   description: tlsClientKey is an optional reference
                                     to a secret by name that contains the PEM-encoded
-                                    TLS private key for the client certificate referenced
+                                    TLS private key for the testEnv.Client certificate referenced
                                     in tlsClientCert. The key "tls.key" is used to
                                     locate the data. If specified and the secret or
                                     expected key is not found, the identity provider
@@ -1190,11 +1190,11 @@ spec:
                                   - name
                                   type: object
                                 clientID:
-                                  description: clientID is the oauth client ID
+                                  description: clientID is the oauth testEnv.Client ID
                                   type: string
                                 clientSecret:
                                   description: clientSecret is a required reference
-                                    to the secret by name containing the oauth client
+                                    to the secret by name containing the oauth testEnv.Client
                                     secret. The key "clientSecret" is used to locate
                                     the data. If the secret or expected key is not
                                     found, the identity provider is not honored. The
@@ -1251,11 +1251,11 @@ spec:
                                   - name
                                   type: object
                                 clientID:
-                                  description: clientID is the oauth client ID
+                                  description: clientID is the oauth testEnv.Client ID
                                   type: string
                                 clientSecret:
                                   description: clientSecret is a required reference
-                                    to the secret by name containing the oauth client
+                                    to the secret by name containing the oauth testEnv.Client
                                     secret. The key "clientSecret" is used to locate
                                     the data. If the secret or expected key is not
                                     found, the identity provider is not honored. The
@@ -1277,11 +1277,11 @@ spec:
                                 Google credentials
                               properties:
                                 clientID:
-                                  description: clientID is the oauth client ID
+                                  description: clientID is the oauth testEnv.Client ID
                                   type: string
                                 clientSecret:
                                   description: clientSecret is a required reference
-                                    to the secret by name containing the oauth client
+                                    to the secret by name containing the oauth testEnv.Client
                                     secret. The key "clientSecret" is used to locate
                                     the data. If the secret or expected key is not
                                     found, the identity provider is not honored. The
@@ -1353,7 +1353,7 @@ spec:
                                 tlsClientCert:
                                   description: tlsClientCert is an optional reference
                                     to a secret by name that contains the PEM-encoded
-                                    TLS client certificate to present when connecting
+                                    TLS testEnv.Client certificate to present when connecting
                                     to the server. The key "tls.crt" is used to locate
                                     the data. If specified and the secret or expected
                                     key is not found, the identity provider is not
@@ -1371,7 +1371,7 @@ spec:
                                 tlsClientKey:
                                   description: tlsClientKey is an optional reference
                                     to a secret by name that contains the PEM-encoded
-                                    TLS private key for the client certificate referenced
+                                    TLS private key for the testEnv.Client certificate referenced
                                     in tlsClientCert. The key "tls.key" is used to
                                     locate the data. If specified and the secret or
                                     expected key is not found, the identity provider
@@ -1478,7 +1478,7 @@ spec:
                                 insecure:
                                   description: 'insecure, if true, indicates the connection
                                     should not use TLS WARNING: Should not be set
-                                    to `true` with the URL scheme "ldaps://" as "ldaps://"
+                                    to `true` with the URL testEnv.Scheme "ldaps://" as "ldaps://"
                                     URLs always attempt to connect using TLS, even
                                     when `insecure` is set to `true` When `true`,
                                     "ldap://" URLS connect insecurely. When `false`,
@@ -1574,11 +1574,11 @@ spec:
                                       x-kubernetes-list-type: atomic
                                   type: object
                                 clientID:
-                                  description: clientID is the oauth client ID
+                                  description: clientID is the oauth testEnv.Client ID
                                   type: string
                                 clientSecret:
                                   description: clientSecret is a required reference
-                                    to the secret by name containing the oauth client
+                                    to the secret by name containing the oauth testEnv.Client
                                     secret. The key "clientSecret" is used to locate
                                     the data. If the secret or expected key is not
                                     found, the identity provider is not honored. The
@@ -1606,7 +1606,7 @@ spec:
                                 issuer:
                                   description: issuer is the URL that the OpenID Provider
                                     asserts as its Issuer Identifier. It must use
-                                    the https scheme with no query or fragment component.
+                                    the https testEnv.Scheme with no query or fragment component.
                                   type: string
                               type: object
                             requestHeader:
@@ -1647,7 +1647,7 @@ spec:
                                 clientCommonNames:
                                   description: clientCommonNames is an optional list
                                     of common names to require a match from. If empty,
-                                    any client certificate validated against the clientCA
+                                    any testEnv.Client certificate validated against the clientCA
                                     bundle is considered authoritative.
                                   items:
                                     type: string
@@ -1759,7 +1759,7 @@ spec:
                         properties:
                           accessTokenInactivityTimeout:
                             description: "accessTokenInactivityTimeout defines the
-                              token inactivity timeout for tokens granted by any client.
+                              token inactivity timeout for tokens granted by any testEnv.Client.
                               The value represents the maximum amount of time that
                               can occur between consecutive uses of the token. Tokens
                               become invalid if they are not used within this temporal
@@ -1767,9 +1767,9 @@ spec:
                               regain access once a token times out. Takes valid time
                               duration string such as \"5m\", \"1.5h\" or \"2h45m\".
                               The minimum allowed value for duration is 300s (5 minutes).
-                              If the timeout is configured per client, then that value
+                              If the timeout is configured per testEnv.Client, then that value
                               takes precedence. If the timeout value is not specified
-                              and the client does not override the value, then tokens
+                              and the testEnv.Client does not override the value, then tokens
                               are valid until their lifetime. \n WARNING: existing
                               tokens' timeout will not be affected (lowered) by changing
                               this value"
@@ -2015,21 +2015,21 @@ spec:
                       control plane to integrate with an eternally managed etcd cluster.
                     properties:
                       endpoint:
-                        description: "Endpoint is the full etcd cluster client endpoint
-                          URL. For example: \n https://etcd-client:2379 \n If the
-                          URL uses an HTTPS scheme, the TLS field is required."
+                        description: "Endpoint is the full etcd cluster testEnv.Client endpoint
+                          URL. For example: \n https://etcd-testEnv.Client:2379 \n If the
+                          URL uses an HTTPS testEnv.Scheme, the TLS field is required."
                         pattern: ^https://
                         type: string
                       tls:
                         description: TLS specifies TLS configuration for HTTPS etcd
-                          client endpoints.
+                          testEnv.Client endpoints.
                         properties:
                           clientSecret:
-                            description: "ClientSecret refers to a secret for client
+                            description: "ClientSecret refers to a secret for testEnv.Client
                               mTLS authentication with the etcd cluster. It may have
-                              the following key/value pairs: \n etcd-client-ca.crt:
-                              Certificate Authority value etcd-client.crt: Client
-                              certificate value etcd-client.key: Client certificate
+                              the following key/value pairs: \n etcd-testEnv.Client-ca.crt:
+                              Certificate Authority value etcd-testEnv.Client.crt: Client
+                              certificate value etcd-testEnv.Client.key: Client certificate
                               key value"
                             properties:
                               name:
@@ -2565,9 +2565,9 @@ spec:
                                 must be provided and cannot be empty.
                               type: string
                             url:
-                              description: URL is fully qualified URI with scheme
+                              description: URL is fully qualified URI with testEnv.Scheme
                                 https, that overrides the default generated endpoint
-                                for a client. This must be provided and cannot be
+                                for a testEnv.Client. This must be provided and cannot be
                                 empty.
                               pattern: ^https://
                               type: string
@@ -3397,7 +3397,7 @@ spec:
             type: string
           kind:
             description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
+              object represents. Servers may infer this from the endpoint the testEnv.Client
               submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
             type: string
           metadata:
@@ -3421,7 +3421,7 @@ spec:
                   webhook endpoint for a cluster to process cluster audit events.
                   It references a secret that contains the webhook information for
                   the audit webhook endpoint. It is a secret because if the endpoint
-                  has mTLS the kubeconfig will contain client keys. The kubeconfig
+                  has mTLS the kubeconfig will contain testEnv.Client keys. The kubeconfig
                   needs to be stored in the secret with a secret key name that corresponds
                   to the constant AuditWebhookKubeconfigKey. \n This field is currently
                   only supported on the IBMCloud platform."
@@ -3482,7 +3482,7 @@ spec:
                 properties:
                   apiServer:
                     description: APIServer holds configuration (like serving certificates,
-                      client CA and CORS domains) shared by all API servers in the
+                      testEnv.Client CA and CORS domains) shared by all API servers in the
                       system, among them especially kube-apiserver and openshift-apiserver.
                     properties:
                       additionalCORSAllowedOrigins:
@@ -3582,10 +3582,10 @@ spec:
                       clientCA:
                         description: 'clientCA references a ConfigMap containing a
                           certificate bundle for the signers that will be recognized
-                          for incoming client certificates in addition to the operator
+                          for incoming testEnv.Client certificates in addition to the operator
                           managed signers. If this is empty, then only operator managed
                           signers are valid. You usually only have to set this if
-                          you have your own PKI you wish to honor client certificates
+                          you have your own PKI you wish to honor testEnv.Client certificates
                           from. The ConfigMap must exist in the openshift-config namespace
                           and contain the following required fields: - ConfigMap.Data["ca-bundle.crt"]
                           - CA bundle.'
@@ -3631,10 +3631,10 @@ spec:
                               the TLS cert info for serving secure traffic to specific
                               hostnames. If no named certificates are provided, or
                               no named certificates match the server name as understood
-                              by a client, the defaultServingCertificate will be used.
+                              by a testEnv.Client, the defaultServingCertificate will be used.
                             items:
                               description: APIServerNamedServingCert maps a server
-                                DNS name, as understood by a client, to a certificate.
+                                DNS name, as understood by a testEnv.Client, to a certificate.
                               properties:
                                 names:
                                   description: names is a optional list of explicit
@@ -4220,8 +4220,8 @@ spec:
                                 as HSTS hosts. If set to 0 and includeSubdomains is
                                 specified, all subdomains of the host are also removed
                                 as HSTS hosts. maxAge is a time-to-live value, and
-                                if this policy is not refreshed on a client, the HSTS
-                                policy will eventually expire on that client.
+                                if this policy is not refreshed on a testEnv.Client, the HSTS
+                                policy will eventually expire on that testEnv.Client.
                               properties:
                                 largestMaxAge:
                                   description: The largest allowed value (in seconds)
@@ -4297,11 +4297,11 @@ spec:
                               type: object
                               x-kubernetes-map-type: atomic
                             preloadPolicy:
-                              description: preloadPolicy directs the client to include
+                              description: preloadPolicy directs the testEnv.Client to include
                                 hosts in its host preload list so that it never needs
                                 to do an initial load to get the HSTS header (note
                                 that this is not defined in RFC 6797 and is therefore
-                                client implementation-dependent).
+                                testEnv.Client implementation-dependent).
                               enum:
                               - RequirePreload
                               - RequireNoPreload
@@ -4439,7 +4439,7 @@ spec:
                                 tlsClientCert:
                                   description: tlsClientCert is an optional reference
                                     to a secret by name that contains the PEM-encoded
-                                    TLS client certificate to present when connecting
+                                    TLS testEnv.Client certificate to present when connecting
                                     to the server. The key "tls.crt" is used to locate
                                     the data. If specified and the secret or expected
                                     key is not found, the identity provider is not
@@ -4457,7 +4457,7 @@ spec:
                                 tlsClientKey:
                                   description: tlsClientKey is an optional reference
                                     to a secret by name that contains the PEM-encoded
-                                    TLS private key for the client certificate referenced
+                                    TLS private key for the testEnv.Client certificate referenced
                                     in tlsClientCert. The key "tls.key" is used to
                                     locate the data. If specified and the secret or
                                     expected key is not found, the identity provider
@@ -4502,11 +4502,11 @@ spec:
                                   - name
                                   type: object
                                 clientID:
-                                  description: clientID is the oauth client ID
+                                  description: clientID is the oauth testEnv.Client ID
                                   type: string
                                 clientSecret:
                                   description: clientSecret is a required reference
-                                    to the secret by name containing the oauth client
+                                    to the secret by name containing the oauth testEnv.Client
                                     secret. The key "clientSecret" is used to locate
                                     the data. If the secret or expected key is not
                                     found, the identity provider is not honored. The
@@ -4563,11 +4563,11 @@ spec:
                                   - name
                                   type: object
                                 clientID:
-                                  description: clientID is the oauth client ID
+                                  description: clientID is the oauth testEnv.Client ID
                                   type: string
                                 clientSecret:
                                   description: clientSecret is a required reference
-                                    to the secret by name containing the oauth client
+                                    to the secret by name containing the oauth testEnv.Client
                                     secret. The key "clientSecret" is used to locate
                                     the data. If the secret or expected key is not
                                     found, the identity provider is not honored. The
@@ -4589,11 +4589,11 @@ spec:
                                 Google credentials
                               properties:
                                 clientID:
-                                  description: clientID is the oauth client ID
+                                  description: clientID is the oauth testEnv.Client ID
                                   type: string
                                 clientSecret:
                                   description: clientSecret is a required reference
-                                    to the secret by name containing the oauth client
+                                    to the secret by name containing the oauth testEnv.Client
                                     secret. The key "clientSecret" is used to locate
                                     the data. If the secret or expected key is not
                                     found, the identity provider is not honored. The
@@ -4665,7 +4665,7 @@ spec:
                                 tlsClientCert:
                                   description: tlsClientCert is an optional reference
                                     to a secret by name that contains the PEM-encoded
-                                    TLS client certificate to present when connecting
+                                    TLS testEnv.Client certificate to present when connecting
                                     to the server. The key "tls.crt" is used to locate
                                     the data. If specified and the secret or expected
                                     key is not found, the identity provider is not
@@ -4683,7 +4683,7 @@ spec:
                                 tlsClientKey:
                                   description: tlsClientKey is an optional reference
                                     to a secret by name that contains the PEM-encoded
-                                    TLS private key for the client certificate referenced
+                                    TLS private key for the testEnv.Client certificate referenced
                                     in tlsClientCert. The key "tls.key" is used to
                                     locate the data. If specified and the secret or
                                     expected key is not found, the identity provider
@@ -4790,7 +4790,7 @@ spec:
                                 insecure:
                                   description: 'insecure, if true, indicates the connection
                                     should not use TLS WARNING: Should not be set
-                                    to `true` with the URL scheme "ldaps://" as "ldaps://"
+                                    to `true` with the URL testEnv.Scheme "ldaps://" as "ldaps://"
                                     URLs always attempt to connect using TLS, even
                                     when `insecure` is set to `true` When `true`,
                                     "ldap://" URLS connect insecurely. When `false`,
@@ -4886,11 +4886,11 @@ spec:
                                       x-kubernetes-list-type: atomic
                                   type: object
                                 clientID:
-                                  description: clientID is the oauth client ID
+                                  description: clientID is the oauth testEnv.Client ID
                                   type: string
                                 clientSecret:
                                   description: clientSecret is a required reference
-                                    to the secret by name containing the oauth client
+                                    to the secret by name containing the oauth testEnv.Client
                                     secret. The key "clientSecret" is used to locate
                                     the data. If the secret or expected key is not
                                     found, the identity provider is not honored. The
@@ -4918,7 +4918,7 @@ spec:
                                 issuer:
                                   description: issuer is the URL that the OpenID Provider
                                     asserts as its Issuer Identifier. It must use
-                                    the https scheme with no query or fragment component.
+                                    the https testEnv.Scheme with no query or fragment component.
                                   type: string
                               type: object
                             requestHeader:
@@ -4959,7 +4959,7 @@ spec:
                                 clientCommonNames:
                                   description: clientCommonNames is an optional list
                                     of common names to require a match from. If empty,
-                                    any client certificate validated against the clientCA
+                                    any testEnv.Client certificate validated against the clientCA
                                     bundle is considered authoritative.
                                   items:
                                     type: string
@@ -5071,7 +5071,7 @@ spec:
                         properties:
                           accessTokenInactivityTimeout:
                             description: "accessTokenInactivityTimeout defines the
-                              token inactivity timeout for tokens granted by any client.
+                              token inactivity timeout for tokens granted by any testEnv.Client.
                               The value represents the maximum amount of time that
                               can occur between consecutive uses of the token. Tokens
                               become invalid if they are not used within this temporal
@@ -5079,9 +5079,9 @@ spec:
                               regain access once a token times out. Takes valid time
                               duration string such as \"5m\", \"1.5h\" or \"2h45m\".
                               The minimum allowed value for duration is 300s (5 minutes).
-                              If the timeout is configured per client, then that value
+                              If the timeout is configured per testEnv.Client, then that value
                               takes precedence. If the timeout value is not specified
-                              and the client does not override the value, then tokens
+                              and the testEnv.Client does not override the value, then tokens
                               are valid until their lifetime. \n WARNING: existing
                               tokens' timeout will not be affected (lowered) by changing
                               this value"
@@ -5311,21 +5311,21 @@ spec:
                       control plane to integrate with an eternally managed etcd cluster.
                     properties:
                       endpoint:
-                        description: "Endpoint is the full etcd cluster client endpoint
-                          URL. For example: \n https://etcd-client:2379 \n If the
-                          URL uses an HTTPS scheme, the TLS field is required."
+                        description: "Endpoint is the full etcd cluster testEnv.Client endpoint
+                          URL. For example: \n https://etcd-testEnv.Client:2379 \n If the
+                          URL uses an HTTPS testEnv.Scheme, the TLS field is required."
                         pattern: ^https://
                         type: string
                       tls:
                         description: TLS specifies TLS configuration for HTTPS etcd
-                          client endpoints.
+                          testEnv.Client endpoints.
                         properties:
                           clientSecret:
-                            description: "ClientSecret refers to a secret for client
+                            description: "ClientSecret refers to a secret for testEnv.Client
                               mTLS authentication with the etcd cluster. It may have
-                              the following key/value pairs: \n etcd-client-ca.crt:
-                              Certificate Authority value etcd-client.crt: Client
-                              certificate value etcd-client.key: Client certificate
+                              the following key/value pairs: \n etcd-testEnv.Client-ca.crt:
+                              Certificate Authority value etcd-testEnv.Client.crt: Client
+                              certificate value etcd-testEnv.Client.key: Client certificate
                               key value"
                             properties:
                               name:
@@ -5796,9 +5796,9 @@ spec:
                                 must be provided and cannot be empty.
                               type: string
                             url:
-                              description: URL is fully qualified URI with scheme
+                              description: URL is fully qualified URI with testEnv.Scheme
                                 https, that overrides the default generated endpoint
-                                for a client. This must be provided and cannot be
+                                for a testEnv.Client. This must be provided and cannot be
                                 empty.
                               pattern: ^https://
                               type: string
