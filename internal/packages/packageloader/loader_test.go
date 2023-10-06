@@ -11,24 +11,15 @@ import (
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	pkoapis "package-operator.run/apis"
 	corev1alpha1 "package-operator.run/apis/core/v1alpha1"
 	manifestsv1alpha1 "package-operator.run/apis/manifests/v1alpha1"
 	"package-operator.run/internal/packages/packagecontent"
 	"package-operator.run/internal/packages/packageimport"
 	"package-operator.run/internal/packages/packageloader"
+	"package-operator.run/internal/testutil"
 )
-
-var testScheme = runtime.NewScheme()
-
-func init() {
-	if err := pkoapis.AddToScheme(testScheme); err != nil {
-		panic(err)
-	}
-}
 
 func TestLoader(t *testing.T) {
 	t.Parallel()
@@ -42,7 +33,7 @@ func TestLoader(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	l := packageloader.New(testScheme, packageloader.WithDefaults, packageloader.WithFilesTransformers(transformer))
+	l := packageloader.New(testutil.Scheme, packageloader.WithDefaults, packageloader.WithFilesTransformers(transformer))
 
 	ctx := logr.NewContext(context.Background(), testr.New(t))
 	files, err := packageimport.Folder(ctx, "testdata")
@@ -205,7 +196,7 @@ func TestTemplateTestValidator(t *testing.T) {
 	pc := &packagecontent.Package{PackageManifest: packageManifest}
 
 	ctx := logr.NewContext(context.Background(), testr.New(t))
-	ttv := packageloader.NewTemplateTestValidator(testScheme, fixturesPath)
+	ttv := packageloader.NewTemplateTestValidator(testutil.Scheme, fixturesPath)
 
 	originalFileMap := packagecontent.Files{
 		"manifest.yaml":     []byte(testPackageManifestContent),

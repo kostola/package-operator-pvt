@@ -23,7 +23,7 @@ func TestObjectSliceLoadReconciler(t *testing.T) {
 
 	c := testutil.NewClient()
 
-	r := newObjectSliceLoadReconciler(testScheme, c, adapters.NewObjectSlice)
+	r := newObjectSliceLoadReconciler(testutil.Scheme, c, adapters.NewObjectSlice)
 
 	object1 := corev1alpha1.ObjectSetObject{
 		Object: unstructured.Unstructured{

@@ -8,11 +8,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	corev1alpha1 "package-operator.run/apis/core/v1alpha1"
+	"package-operator.run/internal/testutil"
 )
 
 func TestGenericPackage(t *testing.T) {
 	t.Parallel()
-	pkg := NewGenericPackage(testScheme)
+	pkg := NewGenericPackage(testutil.Scheme)
 
 	assert.NotNil(t, pkg.ClientObject())
 	pkg.UpdatePhase()
@@ -38,7 +39,7 @@ func TestGenericPackage(t *testing.T) {
 
 func TestGenericClusterPackage(t *testing.T) {
 	t.Parallel()
-	pkg := NewGenericClusterPackage(testScheme)
+	pkg := NewGenericClusterPackage(testutil.Scheme)
 
 	assert.NotNil(t, pkg.ClientObject())
 	pkg.UpdatePhase()

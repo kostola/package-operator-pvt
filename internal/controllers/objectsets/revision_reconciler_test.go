@@ -8,20 +8,11 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	corev1alpha1 "package-operator.run/apis/core/v1alpha1"
 	"package-operator.run/internal/testutil"
 )
-
-var testScheme = runtime.NewScheme()
-
-func init() {
-	if err := corev1alpha1.AddToScheme(testScheme); err != nil {
-		panic(err)
-	}
-}
 
 func Test_revisionReconciler(t *testing.T) {
 	t.Parallel()
@@ -31,7 +22,7 @@ func Test_revisionReconciler(t *testing.T) {
 		testClient.StatusMock.On("Update", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
 		r := &revisionReconciler{
-			scheme:       testScheme,
+			scheme:       testutil.Scheme,
 			newObjectSet: newGenericObjectSet,
 			client:       testClient,
 		}
@@ -55,7 +46,7 @@ func Test_revisionReconciler(t *testing.T) {
 		testClient.StatusMock.On("Update", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
 		r := &revisionReconciler{
-			scheme:       testScheme,
+			scheme:       testutil.Scheme,
 			newObjectSet: newGenericObjectSet,
 			client:       testClient,
 		}
@@ -125,7 +116,7 @@ func Test_revisionReconciler(t *testing.T) {
 		testClient.StatusMock.On("Update", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
 		r := &revisionReconciler{
-			scheme:       testScheme,
+			scheme:       testutil.Scheme,
 			newObjectSet: newGenericObjectSet,
 			client:       testClient,
 		}

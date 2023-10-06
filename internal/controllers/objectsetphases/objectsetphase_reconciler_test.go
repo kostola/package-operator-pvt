@@ -7,9 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -20,23 +18,11 @@ import (
 	"package-operator.run/internal/testutil/ownerhandlingmocks"
 )
 
-var testScheme = runtime.NewScheme()
-
-func init() {
-	if err := corev1alpha1.AddToScheme(testScheme); err != nil {
-		panic(err)
-	}
-	if err := corev1.AddToScheme(testScheme); err != nil {
-		panic(err)
-	}
-}
-
 type phaseReconcilerMock = controllersmocks.PhaseReconcilerMock
 
 func TestPhaseReconciler_Reconcile(t *testing.T) {
 	t.Parallel()
-	scheme := testutil.NewTestSchemeWithCoreV1Alpha1()
-	previousObject := newGenericObjectSet(scheme)
+	previousObject := newGenericObjectSet(testutil.Scheme)
 	previousObject.ClientObject().SetName("test")
 	previousList := []controllers.PreviousObjectSet{previousObject}
 	lookup := func(_ context.Context, _ controllers.PreviousOwner) ([]controllers.PreviousObjectSet, error) {
@@ -67,11 +53,11 @@ func TestPhaseReconciler_Reconcile(t *testing.T) {
 
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			objectSetPhase := newGenericObjectSetPhase(scheme)
+			objectSetPhase := newGenericObjectSetPhase(testutil.Scheme)
 			objectSetPhase.ClientObject().SetName("testPhaseOwner")
 			m := &phaseReconcilerMock{}
 			ownerStrategy := &ownerhandlingmocks.OwnerStrategyMock{}
-			r := newObjectSetPhaseReconciler(testScheme, m, lookup, ownerStrategy)
+			r := newObjectSetPhaseReconciler(testutil.Scheme, m, lookup, ownerStrategy)
 
 			if test.condition.Reason == "ProbeFailure" {
 				m.
@@ -102,19 +88,18 @@ func TestPhaseReconciler_Reconcile(t *testing.T) {
 func TestPhaseReconciler_ReconcileBackoff(t *testing.T) {
 	t.Parallel()
 
-	scheme := testutil.NewTestSchemeWithCoreV1Alpha1()
-	previousObject := newGenericObjectSet(scheme)
+	previousObject := newGenericObjectSet(testutil.Scheme)
 	previousObject.ClientObject().SetName("test")
 	previousList := []controllers.PreviousObjectSet{previousObject}
 	lookup := func(_ context.Context, _ controllers.PreviousOwner) ([]controllers.PreviousObjectSet, error) {
 		return previousList, nil
 	}
 
-	objectSetPhase := newGenericObjectSetPhase(scheme)
+	objectSetPhase := newGenericObjectSetPhase(testutil.Scheme)
 	objectSetPhase.ClientObject().SetName("testPhaseOwner")
 	m := &phaseReconcilerMock{}
 	ownerStrategy := &ownerhandlingmocks.OwnerStrategyMock{}
-	r := newObjectSetPhaseReconciler(testScheme, m, lookup, ownerStrategy)
+	r := newObjectSetPhaseReconciler(testutil.Scheme, m, lookup, ownerStrategy)
 
 	m.
 		On("ReconcilePhase", mock.Anything, objectSetPhase, objectSetPhase.GetPhase(), mock.Anything, previousList).
@@ -135,12 +120,11 @@ func TestPhaseReconciler_Teardown(t *testing.T) {
 	lookup := func(_ context.Context, _ controllers.PreviousOwner) ([]controllers.PreviousObjectSet, error) {
 		return []controllers.PreviousObjectSet{}, nil
 	}
-	scheme := testutil.NewTestSchemeWithCoreV1Alpha1()
-	objectSetPhase := newGenericObjectSetPhase(scheme)
+	objectSetPhase := newGenericObjectSetPhase(testutil.Scheme)
 	ownerStrategy := &ownerhandlingmocks.OwnerStrategyMock{}
 	m := &phaseReconcilerMock{}
 	m.On("TeardownPhase", mock.Anything, mock.Anything, mock.Anything).Return(false, nil)
-	r := newObjectSetPhaseReconciler(testScheme, m, lookup, ownerStrategy)
+	r := newObjectSetPhaseReconciler(testutil.Scheme, m, lookup, ownerStrategy)
 	_, err := r.Teardown(context.Background(), objectSetPhase)
 	assert.NoError(t, err)
 	m.AssertCalled(t, "TeardownPhase", mock.Anything, mock.Anything, mock.Anything)

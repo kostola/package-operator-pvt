@@ -13,6 +13,7 @@ import (
 	corev1alpha1 "package-operator.run/apis/core/v1alpha1"
 	manifestsv1alpha1 "package-operator.run/apis/manifests/v1alpha1"
 	"package-operator.run/internal/packages/packageadmission"
+	"package-operator.run/internal/testutil"
 )
 
 func TestValidatePackageConfiguration(t *testing.T) {
@@ -50,7 +51,7 @@ func TestValidatePackageConfiguration(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			ctx := context.Background()
-			ferrs, err := packageadmission.ValidatePackageConfiguration(ctx, testScheme, test.packageManifestConfig, test.config, nil)
+			ferrs, err := packageadmission.ValidatePackageConfiguration(ctx, testutil.Scheme, test.packageManifestConfig, test.config, nil)
 			require.NoError(t, err)
 
 			var errorStrings []string
@@ -120,7 +121,7 @@ func TestPackageManifest_Validate(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
-			ferr, err := packageadmission.ValidatePackageManifest(ctx, testScheme, test.manifest)
+			ferr, err := packageadmission.ValidatePackageManifest(ctx, testutil.Scheme, test.manifest)
 			require.NoError(t, err)
 
 			var errorStrings []string
@@ -151,7 +152,7 @@ func TestAdmitPackageConfiguration_Prune(t *testing.T) {
 			},
 		},
 	}
-	elist, err := packageadmission.AdmitPackageConfiguration(ctx, testScheme, inputCfg, man, field.NewPath("spec", "config"))
+	elist, err := packageadmission.AdmitPackageConfiguration(ctx, testutil.Scheme, inputCfg, man, field.NewPath("spec", "config"))
 	require.NoError(t, err)
 	require.Nil(t, elist)
 	require.Equal(t, expectedOutputConfig, inputCfg)
@@ -175,7 +176,7 @@ func TestAdmitPackageConfiguration_Default(t *testing.T) {
 			},
 		},
 	}
-	elist, err := packageadmission.AdmitPackageConfiguration(ctx, testScheme, inputCfg, man, field.NewPath("spec", "config"))
+	elist, err := packageadmission.AdmitPackageConfiguration(ctx, testutil.Scheme, inputCfg, man, field.NewPath("spec", "config"))
 	require.NoError(t, err)
 	require.Nil(t, elist)
 	require.Equal(t, expectedOutputConfig, inputCfg)
@@ -209,7 +210,7 @@ func TestAdmitPackageConfigurationTemplating_Default(t *testing.T) {
 			}},
 		},
 	}
-	elist, err := packageadmission.AdmitPackageConfiguration(ctx, testScheme, inputCfg, man, field.NewPath("spec", "config"))
+	elist, err := packageadmission.AdmitPackageConfiguration(ctx, testutil.Scheme, inputCfg, man, field.NewPath("spec", "config"))
 	require.NoError(t, err)
 	require.Nil(t, elist)
 	require.Equal(t, expectedOutputConfig, inputCfg)

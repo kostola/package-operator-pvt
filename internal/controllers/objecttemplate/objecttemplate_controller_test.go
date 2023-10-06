@@ -9,7 +9,6 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -19,14 +18,6 @@ import (
 	"package-operator.run/internal/testutil/restmappermock"
 )
 
-var testScheme = runtime.NewScheme()
-
-func init() {
-	if err := corev1alpha1.AddToScheme(testScheme); err != nil {
-		panic(err)
-	}
-}
-
 func TestObjectTemplateController_Reconcile(t *testing.T) {
 	t.Parallel()
 
@@ -35,7 +26,7 @@ func TestObjectTemplateController_Reconcile(t *testing.T) {
 	log := testr.New(t)
 	dc := &dynamiccachemocks.DynamicCacheMock{}
 	rm := &restmappermock.RestMapperMock{}
-	controller := NewObjectTemplateController(c, uncachedClient, log, dc, testScheme, rm)
+	controller := NewObjectTemplateController(c, uncachedClient, log, dc, testutil.Scheme, rm)
 	controller.reconciler = nil // we are testing reconcilers on their own
 
 	objectKey := client.ObjectKey{Name: "test", Namespace: "testns"}
@@ -67,7 +58,7 @@ func TestObjectTemplateController_Reconcile_deletion(t *testing.T) {
 	log := testr.New(t)
 	dc := &dynamiccachemocks.DynamicCacheMock{}
 	rm := &restmappermock.RestMapperMock{}
-	controller := NewObjectTemplateController(c, uncachedClient, log, dc, testScheme, rm)
+	controller := NewObjectTemplateController(c, uncachedClient, log, dc, testutil.Scheme, rm)
 	controller.reconciler = nil // we are testing reconcilers on their own
 
 	objectKey := client.ObjectKey{Name: "test", Namespace: "testns"}

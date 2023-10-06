@@ -394,7 +394,7 @@ func Test_initializer_ensureDeploymentGone(t *testing.T) {
 				ctx,
 				&initializer{
 					client: c,
-					scheme: testScheme,
+					scheme: testutil.Scheme,
 				})
 		})
 	}

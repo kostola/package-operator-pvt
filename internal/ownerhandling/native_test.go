@@ -14,8 +14,6 @@ import (
 	"package-operator.run/internal/testutil"
 )
 
-var testScheme = testutil.NewTestSchemeWithCoreV1()
-
 func TestOwnerStrategyNative_RemoveOwner(t *testing.T) {
 	t.Parallel()
 	obj := &corev1.ConfigMap{
@@ -36,7 +34,7 @@ func TestOwnerStrategyNative_RemoveOwner(t *testing.T) {
 		},
 	}
 
-	s := NewNative(testScheme)
+	s := NewNative(testutil.Scheme)
 	s.RemoveOwner(owner, obj)
 
 	assert.Equal(t, []metav1.OwnerReference{}, obj.GetOwnerReferences())
@@ -44,7 +42,7 @@ func TestOwnerStrategyNative_RemoveOwner(t *testing.T) {
 
 func TestOwnerStrategyNative_SetOwnerReference(t *testing.T) {
 	t.Parallel()
-	s := NewNative(testScheme)
+	s := NewNative(testutil.Scheme)
 	obj := testutil.NewSecret()
 	cm1 := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
@@ -76,7 +74,7 @@ func TestOwnerStrategyNative_SetOwnerReference(t *testing.T) {
 
 func TestOwnerStrategyNative_SetControllerReference(t *testing.T) {
 	t.Parallel()
-	s := NewNative(testScheme)
+	s := NewNative(testutil.Scheme)
 	obj := testutil.NewSecret()
 	cm1 := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
@@ -116,7 +114,7 @@ func TestOwnerStrategyNative_SetControllerReference(t *testing.T) {
 
 func TestOwnerStrategyNative_IsController(t *testing.T) {
 	t.Parallel()
-	s := NewNative(testScheme)
+	s := NewNative(testutil.Scheme)
 	obj := testutil.NewSecret()
 	cm1 := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
@@ -141,7 +139,7 @@ func TestOwnerStrategyNative_IsController(t *testing.T) {
 
 func TestOwnerStrategyNative_IsOwner(t *testing.T) {
 	t.Parallel()
-	s := NewNative(testScheme)
+	s := NewNative(testutil.Scheme)
 	obj := testutil.NewSecret()
 	cm1 := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
@@ -167,7 +165,7 @@ func TestOwnerStrategyNative_IsOwner(t *testing.T) {
 
 func TestOwnerStrategyNative_ReleaseController(t *testing.T) {
 	t.Parallel()
-	s := NewNative(testScheme)
+	s := NewNative(testutil.Scheme)
 	obj := testutil.NewSecret()
 	owner := testutil.NewConfigMap()
 	owner.Namespace = obj.Namespace
@@ -189,7 +187,7 @@ func TestOwnerStrategyNative_ReleaseController(t *testing.T) {
 
 func TestOwnerStrategyNative_OwnerPatch(t *testing.T) {
 	t.Parallel()
-	s := NewNative(testScheme)
+	s := NewNative(testutil.Scheme)
 	obj := testutil.NewSecret()
 	obj.Annotations = map[string]string{
 		corev1alpha1.ObjectSetRevisionAnnotation: "3",

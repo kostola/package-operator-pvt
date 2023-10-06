@@ -436,7 +436,6 @@ func newControllerAndMocks(t *testing.T) (
 	*dynamiccachemocks.DynamicCacheMock,
 ) {
 	t.Helper()
-	scheme := testutil.NewTestSchemeWithCoreV1Alpha1()
 	c := testutil.NewClient()
 	uncachedC := testutil.NewClient()
 	dc := &dynamiccachemocks.DynamicCacheMock{}
@@ -444,7 +443,7 @@ func newControllerAndMocks(t *testing.T) (
 	r := &templateReconciler{
 		client:           c,
 		uncachedClient:   uncachedC,
-		scheme:           scheme,
+		scheme:           testutil.Scheme,
 		dynamicCache:     dc,
 		preflightChecker: preflight.List{},
 	}

@@ -6,16 +6,14 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"k8s.io/apimachinery/pkg/runtime"
 
-	pkoapis "package-operator.run/apis"
 	"package-operator.run/internal/packages"
 	"package-operator.run/internal/packages/packagecontent"
 	"package-operator.run/internal/packages/packageimport"
+	"package-operator.run/internal/testutil"
 )
 
 var (
-	testScheme   = runtime.NewScheme()
 	testDataPath = filepath.Join("testdata", "base")
 	testManifest = "apiVersion: manifests.package-operator.run/v1alpha1\n" +
 		"kind: PackageManifest\n" +
@@ -28,12 +26,6 @@ var (
 		"    - name: configure"
 )
 
-func init() {
-	if err := pkoapis.AddToScheme(testScheme); err != nil {
-		panic(err)
-	}
-}
-
 func TestPackageFromFile(t *testing.T) {
 	t.Parallel()
 
@@ -42,7 +34,7 @@ func TestPackageFromFile(t *testing.T) {
 	files, err := packageimport.Folder(ctx, testDataPath)
 	require.NoError(t, err)
 
-	pkg, err := packagecontent.PackageFromFiles(ctx, testScheme, files, "")
+	pkg, err := packagecontent.PackageFromFiles(ctx, testutil.Scheme, files, "")
 	require.NoError(t, err)
 	require.NotNil(t, pkg)
 }
@@ -55,7 +47,7 @@ func TestTemplateSpecFromPackage(t *testing.T) {
 	files, err := packageimport.Folder(ctx, testDataPath)
 	require.NoError(t, err)
 
-	pkg, err := packagecontent.PackageFromFiles(ctx, testScheme, files, "")
+	pkg, err := packagecontent.PackageFromFiles(ctx, testutil.Scheme, files, "")
 	require.NoError(t, err)
 	require.NotNil(t, pkg)
 
@@ -104,7 +96,7 @@ func TestPackageManifestLoader_Errors(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
-			_, err := packagecontent.PackageFromFiles(context.Background(), testScheme, test.fileMap, "")
+			_, err := packagecontent.PackageFromFiles(context.Background(), testutil.Scheme, test.fileMap, "")
 			require.Error(t, err)
 		})
 	}

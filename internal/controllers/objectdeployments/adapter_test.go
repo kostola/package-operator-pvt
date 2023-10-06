@@ -10,26 +10,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 
-	pkoapis "package-operator.run/apis"
 	corev1alpha1 "package-operator.run/apis/core/v1alpha1"
+	"package-operator.run/internal/testutil"
 )
-
-var testScheme *runtime.Scheme
-
-func init() {
-	testScheme = runtime.NewScheme()
-	requiredSchemes := runtime.SchemeBuilder{
-		clientgoscheme.AddToScheme,
-		pkoapis.AddToScheme,
-	}
-	if err := requiredSchemes.AddToScheme(testScheme); err != nil {
-		panic(err)
-	}
-}
 
 func genObjectSet(
 	name string,
@@ -170,7 +156,7 @@ func cmTemplate(name string, namespace string, t require.TestingT) client.Object
 			Labels:    map[string]string{"test.package-operator.run/test-1": "True"},
 		},
 	}
-	GVK, err := apiutil.GVKForObject(cm, testScheme)
+	GVK, err := apiutil.GVKForObject(cm, testutil.Scheme)
 	assert.NoError(t, err)
 	cm.SetGroupVersionKind(GVK)
 	return cm
@@ -187,7 +173,7 @@ func secretTemplate(name string, t require.TestingT) client.Object {
 			"hello": "world",
 		},
 	}
-	GVK, err := apiutil.GVKForObject(secret, testScheme)
+	GVK, err := apiutil.GVKForObject(secret, testutil.Scheme)
 	assert.NoError(t, err)
 	secret.SetGroupVersionKind(GVK)
 	return secret
@@ -220,7 +206,7 @@ func deploymentTemplate(deploymentName string, t require.TestingT) client.Object
 		},
 	}
 
-	GVK, err := apiutil.GVKForObject(obj, testScheme)
+	GVK, err := apiutil.GVKForObject(obj, testutil.Scheme)
 	assert.NoError(t, err)
 	obj.SetGroupVersionKind(GVK)
 	return obj

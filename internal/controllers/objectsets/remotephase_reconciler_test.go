@@ -191,11 +191,11 @@ func TestObjectSetRemotePhaseReconciler_Teardown(t *testing.T) {
 			r := &objectSetRemotePhaseReconciler{
 				client:            clientMock,
 				uncachedClient:    uncachedClient,
-				scheme:            testScheme,
+				scheme:            testutil.Scheme,
 				newObjectSetPhase: newGenericObjectSetPhase,
 			}
 
-			genObjectSet := newGenericObjectSet(testScheme)
+			genObjectSet := newGenericObjectSet(testutil.Scheme)
 			objectSet := genObjectSet.ClientObject().(*corev1alpha1.ObjectSet)
 			objectSet.Name = "my-stuff"
 			objectSet.Namespace = "my-namespace"
@@ -223,11 +223,11 @@ func TestObjectSetRemotePhaseReconciler_Teardown(t *testing.T) {
 func TestObjectSetRemotePhaseReconciler_desiredObjectSetPhase(t *testing.T) {
 	t.Parallel()
 	r := &objectSetRemotePhaseReconciler{
-		scheme:            testScheme,
+		scheme:            testutil.Scheme,
 		newObjectSetPhase: newGenericObjectSetPhase,
 	}
 
-	genObjectSet := newGenericObjectSet(testScheme)
+	genObjectSet := newGenericObjectSet(testutil.Scheme)
 	objectSet := genObjectSet.ClientObject().(*corev1alpha1.ObjectSet)
 	objectSet.Name = "my-stuff"
 	objectSet.Namespace = "my-namespace"
@@ -305,7 +305,7 @@ func TestObjectSetRemotePhaseReconciler_TeardownNamespaceDeletion_ObjectSet(t *t
 	r := &objectSetRemotePhaseReconciler{
 		client:            c,
 		uncachedClient:    uncachedClient,
-		scheme:            testScheme,
+		scheme:            testutil.Scheme,
 		newObjectSetPhase: newGenericObjectSetPhase,
 	}
 
@@ -362,7 +362,7 @@ func TestObjectSetRemotePhaseReconciler_TeardownNamespaceDeletion_ClusterObjectS
 	r := &objectSetRemotePhaseReconciler{
 		client:            c,
 		uncachedClient:    uncachedClient,
-		scheme:            testScheme,
+		scheme:            testutil.Scheme,
 		newObjectSetPhase: newGenericObjectSetPhase,
 	}
 

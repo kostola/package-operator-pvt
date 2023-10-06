@@ -93,7 +93,7 @@ func TestReportOwnActiveObjects(t *testing.T) {
 		Return(false)
 
 	activeObjects, err := GetControllerOf(
-		ctx, testScheme, ownerStrategy,
+		ctx, testutil.Scheme, ownerStrategy,
 		&corev1.ConfigMap{},
 		[]client.Object{
 			&corev1.Secret{

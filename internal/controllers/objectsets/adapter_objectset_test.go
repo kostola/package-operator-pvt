@@ -7,6 +7,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	corev1alpha1 "package-operator.run/apis/core/v1alpha1"
+	"package-operator.run/internal/testutil"
 )
 
 var tests = []struct {
@@ -94,7 +95,7 @@ func TestGenericClusterObjectSet_UpdateStatusPhase(t *testing.T) {
 func TestGenericObjectSet(t *testing.T) {
 	t.Parallel()
 
-	objectSet := newGenericObjectSet(testScheme).(*GenericObjectSet)
+	objectSet := newGenericObjectSet(testutil.Scheme).(*GenericObjectSet)
 
 	co := objectSet.ClientObject()
 	assert.IsType(t, &corev1alpha1.ObjectSet{}, co)
@@ -138,7 +139,7 @@ func TestGenericObjectSet(t *testing.T) {
 func TestGenericClusterObjectSet(t *testing.T) {
 	t.Parallel()
 
-	objectSet := newGenericClusterObjectSet(testScheme).(*GenericClusterObjectSet)
+	objectSet := newGenericClusterObjectSet(testutil.Scheme).(*GenericClusterObjectSet)
 
 	co := objectSet.ClientObject()
 	assert.IsType(t, &corev1alpha1.ClusterObjectSet{}, co)

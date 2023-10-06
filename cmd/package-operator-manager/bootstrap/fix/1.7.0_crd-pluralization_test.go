@@ -81,7 +81,7 @@ func TestCRDPluralizationFix_ensureClusterObjectSetsGoneWithOrphansLeft(t *testi
 				log, err := logr.FromContext(ctx)
 				require.NoError(t, err)
 
-				c.On("Scheme").Return(testScheme)
+				c.On("Scheme").Return(testutil.Scheme)
 
 				c.On("DeleteAllOf",
 					mock.Anything,
@@ -252,7 +252,7 @@ func TestCRDPluralizationFix_ensureClusterObjectSetsGoneWithOrphansLeft(t *testi
 
 				testErr := errors.New("test") //nolint:goerr113
 
-				c.On("Scheme").Return(testScheme)
+				c.On("Scheme").Return(testutil.Scheme)
 
 				c.On("DeleteAllOf",
 					mock.Anything,
@@ -308,7 +308,7 @@ func TestCRDPluralizationFix_ensureClusterObjectSetsGoneWithOrphansLeft(t *testi
 			ctx := logr.NewContext(context.Background(), testr.New(t))
 			c := testutil.NewClient()
 
-			subTest.t(t, c, ctx, testScheme)
+			subTest.t(t, c, ctx, testutil.Scheme)
 			c.AssertExpectations(t)
 		})
 	}
@@ -347,7 +347,7 @@ func TestEnsureCRDGone(t *testing.T) {
 				log, err := logr.FromContext(ctx)
 				require.NoError(t, err)
 
-				c.On("Scheme").Return(testScheme)
+				c.On("Scheme").Return(testutil.Scheme)
 
 				c.On("Delete",
 					mock.Anything,
@@ -397,7 +397,7 @@ func TestEnsureCRDGone(t *testing.T) {
 				log, err := logr.FromContext(ctx)
 				require.NoError(t, err)
 
-				c.On("Scheme").Return(testScheme)
+				c.On("Scheme").Return(testutil.Scheme)
 
 				c.On("Delete",
 					mock.Anything,
@@ -431,7 +431,7 @@ func TestEnsureCRDGone(t *testing.T) {
 			ctx := logr.NewContext(context.Background(), testr.New(t))
 			c := testutil.NewClient()
 
-			subTest.t(t, c, ctx, testScheme)
+			subTest.t(t, c, ctx, testutil.Scheme)
 			c.AssertExpectations(t)
 		})
 	}

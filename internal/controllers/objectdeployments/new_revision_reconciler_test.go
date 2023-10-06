@@ -24,11 +24,11 @@ func Test_newRevisionReconciler_delaysObjectSetCreation(t *testing.T) {
 	log := testr.New(t)
 	ctx := logr.NewContext(context.Background(), log)
 	clientMock := testutil.NewClient()
-	deploymentController := NewObjectDeploymentController(clientMock, log, testScheme)
+	deploymentController := NewObjectDeploymentController(clientMock, log, testutil.Scheme)
 	r := newRevisionReconciler{
 		client:       clientMock,
 		newObjectSet: deploymentController.newObjectSet,
-		scheme:       testScheme,
+		scheme:       testutil.Scheme,
 	}
 
 	objectDeploymentMock := &genericObjectDeploymentMock{}
@@ -131,14 +131,14 @@ func Test_newRevisionReconciler_createsObjectSet(t *testing.T) {
 			ctx := logr.NewContext(context.Background(), log)
 			clientMock := testCase.client
 			// Setup reconciler
-			deploymentController := NewObjectDeploymentController(testCase.client, log, testScheme)
+			deploymentController := NewObjectDeploymentController(testCase.client, log, testutil.Scheme)
 			r := newRevisionReconciler{
 				client:       clientMock,
 				newObjectSet: deploymentController.newObjectSet,
-				scheme:       testScheme,
+				scheme:       testutil.Scheme,
 			}
 
-			objectDeployment := adapters.NewObjectDeployment(testScheme)
+			objectDeployment := adapters.NewObjectDeployment(testutil.Scheme)
 			objectDeployment.ClientObject().SetName("test")
 			objectDeployment.ClientObject().SetNamespace("test")
 			objectDeployment.ClientObject().SetGeneration(testCase.deploymentGeneration)
@@ -151,7 +151,7 @@ func Test_newRevisionReconciler_createsObjectSet(t *testing.T) {
 			// make the client return an AlreadyExists error
 			if testCase.conflict {
 				if err := controllerutil.SetControllerReference(
-					objectDeployment.ClientObject(), &testCase.conflictObject, testScheme); err != nil {
+					objectDeployment.ClientObject(), &testCase.conflictObject, testutil.Scheme); err != nil {
 					require.NoError(t, err)
 				}
 
@@ -186,7 +186,7 @@ func Test_newRevisionReconciler_createsObjectSet(t *testing.T) {
 			for i := range testCase.prevRevisions {
 				obj := &testCase.prevRevisions[i]
 				if err := controllerutil.SetControllerReference(
-					objectDeployment.ClientObject(), obj, testScheme); err != nil {
+					objectDeployment.ClientObject(), obj, testutil.Scheme); err != nil {
 					require.NoError(t, err)
 				}
 

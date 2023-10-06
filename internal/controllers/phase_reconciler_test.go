@@ -13,7 +13,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -24,17 +23,6 @@ import (
 	"package-operator.run/internal/preflight"
 	"package-operator.run/internal/testutil"
 )
-
-var testScheme = runtime.NewScheme()
-
-func init() {
-	if err := corev1alpha1.AddToScheme(testScheme); err != nil {
-		panic(err)
-	}
-	if err := corev1.AddToScheme(testScheme); err != nil {
-		panic(err)
-	}
-}
 
 func TestPhaseReconciler_TeardownPhase_failing_preflight(t *testing.T) {
 	t.Parallel()
@@ -809,7 +797,7 @@ func Test_defaultAdoptionChecker_Check(t *testing.T) {
 			os := &ownerStrategyMock{}
 			c := &defaultAdoptionChecker{
 				ownerStrategy: os,
-				scheme:        testScheme,
+				scheme:        testutil.Scheme,
 			}
 			owner := &phaseObjectOwnerMock{}
 
@@ -850,7 +838,7 @@ func Test_defaultAdoptionChecker_isControlledByPreviousRevision(t *testing.T) {
 			t.Parallel()
 			os := &ownerStrategyMock{}
 			ac := &defaultAdoptionChecker{
-				scheme:        testScheme,
+				scheme:        testutil.Scheme,
 				ownerStrategy: os,
 			}
 
@@ -993,7 +981,7 @@ func Test_defaultPatcher_patchObject_update_no_metadata(t *testing.T) {
 		},
 	}
 	updatedObj := currentObj.DeepCopy()
-	err := controllerutil.SetControllerReference(&corev1.ConfigMap{}, updatedObj, testScheme)
+	err := controllerutil.SetControllerReference(&corev1.ConfigMap{}, updatedObj, testutil.Scheme)
 	require.NoError(t, err)
 
 	err = r.Patch(ctx, desiredObj, currentObj, updatedObj)
@@ -1493,7 +1481,7 @@ func TestPhaseReconciler_ReconcilePhase_preflightError(t *testing.T) {
 
 	pcm := &preflightCheckerMock{}
 	pr := &PhaseReconciler{
-		scheme:           testScheme,
+		scheme:           testutil.Scheme,
 		preflightChecker: pcm,
 	}
 

@@ -18,6 +18,7 @@ import (
 	corev1alpha1 "package-operator.run/apis/core/v1alpha1"
 	"package-operator.run/internal/controllers"
 	"package-operator.run/internal/preflight"
+	"package-operator.run/internal/testutil"
 	"package-operator.run/internal/testutil/controllersmocks"
 )
 
@@ -65,7 +66,7 @@ func TestObjectSetPhasesReconciler_Reconcile(t *testing.T) {
 		return []controllers.PreviousObjectSet{}, nil
 	}
 	checker := &phasesCheckerMock{}
-	r := newObjectSetPhasesReconciler(testScheme, pr, remotePr, lookup, checker)
+	r := newObjectSetPhasesReconciler(testutil.Scheme, pr, remotePr, lookup, checker)
 
 	phase1 := corev1alpha1.ObjectSetTemplatePhase{
 		Name: "phase1",
@@ -118,7 +119,7 @@ func TestPhaseReconciler_ReconcileBackoff(t *testing.T) {
 		return []controllers.PreviousObjectSet{}, nil
 	}
 	checker := &phasesCheckerMock{}
-	r := newObjectSetPhasesReconciler(testScheme, pr, remotePr, lookup, checker)
+	r := newObjectSetPhasesReconciler(testutil.Scheme, pr, remotePr, lookup, checker)
 
 	os := &GenericObjectSet{}
 	os.Spec.Phases = []corev1alpha1.ObjectSetTemplatePhase{
@@ -168,7 +169,7 @@ func TestObjectSetPhasesReconciler_Teardown(t *testing.T) {
 				return []controllers.PreviousObjectSet{}, nil
 			}
 			checker := &phasesCheckerMock{}
-			r := newObjectSetPhasesReconciler(testScheme, pr, remotePr, lookup, checker)
+			r := newObjectSetPhasesReconciler(testutil.Scheme, pr, remotePr, lookup, checker)
 
 			phase1 := corev1alpha1.ObjectSetTemplatePhase{
 				Name: "phase1",
@@ -291,7 +292,7 @@ func TestObjectSetPhasesReconciler_SuccessDelay(t *testing.T) {
 			checker.On("Check", mock.Anything, mock.Anything).Return([]preflight.Violation{}, nil)
 
 			rec := newObjectSetPhasesReconciler(
-				testScheme, prm, rprm, lookup, checker,
+				testutil.Scheme, prm, rprm, lookup, checker,
 				withClock{
 					Clock: cm,
 				},
@@ -328,7 +329,7 @@ func Test_isObjectSetInTransition(t *testing.T) {
 	})
 	examplePod.SetName("pod-1")
 
-	testObjectSet1 := newGenericObjectSet(testScheme)
+	testObjectSet1 := newGenericObjectSet(testutil.Scheme)
 	testObjectSet1.ClientObject().SetNamespace("test-ns")
 	testObjectSet1.SetPhases([]corev1alpha1.ObjectSetTemplatePhase{
 		{
@@ -354,7 +355,7 @@ func Test_isObjectSetInTransition(t *testing.T) {
 	}{
 		{
 			name:      "empty",
-			objectSet: newGenericObjectSet(testScheme),
+			objectSet: newGenericObjectSet(testutil.Scheme),
 			expected:  false,
 		},
 		{

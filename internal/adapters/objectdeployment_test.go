@@ -7,12 +7,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	corev1alpha1 "package-operator.run/apis/core/v1alpha1"
+	"package-operator.run/internal/testutil"
 )
 
 func TestObjectDeployment(t *testing.T) {
 	t.Parallel()
 
-	deploy := NewObjectDeployment(testScheme).(*ObjectDeployment)
+	deploy := NewObjectDeployment(testutil.Scheme).(*ObjectDeployment)
 
 	co := deploy.ClientObject()
 	assert.IsType(t, &corev1alpha1.ObjectDeployment{}, co)
@@ -52,7 +53,7 @@ func TestObjectDeployment(t *testing.T) {
 
 func TestClusterObjectDeployment(t *testing.T) {
 	t.Parallel()
-	deploy := NewClusterObjectDeployment(testScheme).(*ClusterObjectDeployment)
+	deploy := NewClusterObjectDeployment(testutil.Scheme).(*ClusterObjectDeployment)
 
 	co := deploy.ClientObject()
 	assert.IsType(t, &corev1alpha1.ClusterObjectDeployment{}, co)

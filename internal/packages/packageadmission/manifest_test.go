@@ -10,6 +10,7 @@ import (
 
 	manifestsv1alpha1 "package-operator.run/apis/manifests/v1alpha1"
 	"package-operator.run/internal/packages/packageadmission"
+	"package-operator.run/internal/testutil"
 )
 
 func TestValidatePackageManifest(t *testing.T) {
@@ -138,7 +139,7 @@ func TestValidatePackageManifest(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			ctx := context.Background()
-			ferrs, err := packageadmission.ValidatePackageManifest(ctx, testScheme, test.packageManifest)
+			ferrs, err := packageadmission.ValidatePackageManifest(ctx, testutil.Scheme, test.packageManifest)
 			require.NoError(t, err)
 			require.Len(t, ferrs, len(test.expectedErrors))
 

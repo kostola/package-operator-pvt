@@ -11,6 +11,7 @@ import (
 	"package-operator.run/internal/packages"
 	"package-operator.run/internal/packages/packagecontent"
 	"package-operator.run/internal/packages/packageimport"
+	"package-operator.run/internal/testutil"
 )
 
 type testData struct {
@@ -44,7 +45,7 @@ func TestMultiComponentLoader(t *testing.T) {
 			files, err := packageimport.Folder(ctx, filepath.Join("testdata", "multi-component", test.directory))
 			require.NoError(t, err)
 
-			pkg, err := packagecontent.AllPackagesFromFiles(ctx, testScheme, files, test.component)
+			pkg, err := packagecontent.AllPackagesFromFiles(ctx, testutil.Scheme, files, test.component)
 
 			if test.error == nil {
 				require.NoError(t, err)

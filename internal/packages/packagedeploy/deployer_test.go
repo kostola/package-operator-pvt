@@ -45,7 +45,7 @@ func TestNewPackageDeployer(t *testing.T) {
 	t.Parallel()
 
 	c := testutil.NewClient()
-	l := NewPackageDeployer(c, testScheme)
+	l := NewPackageDeployer(c, testutil.Scheme)
 	assert.NotNil(t, l)
 }
 
@@ -53,7 +53,7 @@ func TestNewClustePackageDeployer(t *testing.T) {
 	t.Parallel()
 
 	c := testutil.NewClient()
-	l := NewClusterPackageDeployer(c, testScheme)
+	l := NewClusterPackageDeployer(c, testutil.Scheme)
 	assert.NotNil(t, l)
 }
 
@@ -65,7 +65,7 @@ func TestPackageDeployer_Load(t *testing.T) {
 	deploymentReconcilerMock := &deploymentReconcilerMock{}
 	l := &PackageDeployer{
 		client:              c,
-		scheme:              testScheme,
+		scheme:              testutil.Scheme,
 		newObjectDeployment: adapters.NewObjectDeployment,
 
 		packageContentLoader: pcl,
@@ -142,7 +142,7 @@ func TestPackageDeployer_Load_Error(t *testing.T) {
 	deploymentReconcilerMock := &deploymentReconcilerMock{}
 	l := &PackageDeployer{
 		client:              c,
-		scheme:              testScheme,
+		scheme:              testutil.Scheme,
 		newObjectDeployment: adapters.NewObjectDeployment,
 
 		packageContentLoader: pcl,

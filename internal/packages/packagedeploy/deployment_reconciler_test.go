@@ -26,7 +26,7 @@ func Test_DeploymentReconciler_Reconcile(t *testing.T) {
 	t.Parallel()
 
 	c := testutil.NewClient()
-	r := newDeploymentReconciler(testScheme, c,
+	r := newDeploymentReconciler(testutil.Scheme, c,
 		adapters.NewObjectDeployment,
 		adapters.NewObjectSlice,
 		adapters.NewObjectSliceList,
@@ -144,7 +144,7 @@ func TestDeploymentReconciler_reconcileSlice_hashCollision(t *testing.T) {
 	t.Parallel()
 
 	c := testutil.NewClient()
-	r := newDeploymentReconciler(testScheme, c,
+	r := newDeploymentReconciler(testutil.Scheme, c,
 		adapters.NewObjectDeployment,
 		adapters.NewObjectSlice,
 		adapters.NewObjectSliceList,
@@ -209,7 +209,7 @@ func TestDeploymentReconciler_sliceGarbageCollection(t *testing.T) {
 	t.Parallel()
 
 	c := testutil.NewClient()
-	r := newDeploymentReconciler(testScheme, c,
+	r := newDeploymentReconciler(testutil.Scheme, c,
 		adapters.NewObjectDeployment,
 		adapters.NewObjectSlice,
 		adapters.NewObjectSliceList,

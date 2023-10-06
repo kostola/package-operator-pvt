@@ -66,7 +66,6 @@ func (c *objectSetPhaseReconcilerMock) Teardown(
 func newControllerAndMocks() (*GenericObjectSetPhaseController, *testutil.CtrlClient, *dynamicCacheMock, *objectSetPhaseReconcilerMock) {
 	dc := &dynamicCacheMock{}
 
-	scheme := testutil.NewTestSchemeWithCoreV1Alpha1()
 	c := testutil.NewClient()
 	// NewSameClusterObjectSetPhaseController
 	controller := &GenericObjectSetPhaseController{
@@ -74,11 +73,11 @@ func newControllerAndMocks() (*GenericObjectSetPhaseController, *testutil.CtrlCl
 
 		class:  "default",
 		log:    ctrl.Log.WithName("controllers"),
-		scheme: scheme,
+		scheme: testutil.Scheme,
 
 		client:        c,
 		dynamicCache:  dc,
-		ownerStrategy: ownerhandling.NewNative(scheme),
+		ownerStrategy: ownerhandling.NewNative(testutil.Scheme),
 	}
 
 	pr := &objectSetPhaseReconcilerMock{}
@@ -281,17 +280,16 @@ func TestInitializers(t *testing.T) {
 	t.Parallel()
 
 	log := testr.New(t)
-	scheme := testutil.NewTestSchemeWithCoreV1Alpha1()
 	dc := &dynamicCacheMock{}
 	client := testutil.NewClient()
 	class := "default"
-	mapper := meta.NewDefaultRESTMapper(scheme.PreferredVersionAllGroups())
+	mapper := meta.NewDefaultRESTMapper(testutil.Scheme.PreferredVersionAllGroups())
 
 	t.Run("NewMultiClusterObjectSetPhaseController", func(t *testing.T) {
 		t.Parallel()
 
 		ctrl := NewMultiClusterObjectSetPhaseController(
-			log, scheme,
+			log, testutil.Scheme,
 			dc, client, class, client, client,
 			mapper,
 		)
@@ -303,7 +301,7 @@ func TestInitializers(t *testing.T) {
 		t.Parallel()
 
 		ctrl := NewMultiClusterClusterObjectSetPhaseController(
-			log, scheme,
+			log, testutil.Scheme,
 			dc, client, class, client, client,
 			mapper,
 		)
@@ -315,7 +313,7 @@ func TestInitializers(t *testing.T) {
 		t.Parallel()
 
 		ctrl := NewSameClusterObjectSetPhaseController(
-			log, scheme,
+			log, testutil.Scheme,
 			dc, client, class, client,
 			mapper,
 		)
@@ -327,7 +325,7 @@ func TestInitializers(t *testing.T) {
 		t.Parallel()
 
 		ctrl := NewSameClusterClusterObjectSetPhaseController(
-			log, scheme,
+			log, testutil.Scheme,
 			dc, client, class, client,
 			mapper,
 		)

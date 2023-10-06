@@ -465,7 +465,6 @@ func newControllerAndMocks() (
 	*objectSetPhasesReconcilerMock,
 	*revisionReconcilerMock,
 ) {
-	scheme := testutil.NewTestSchemeWithCoreV1Alpha1()
 	c := testutil.NewClient()
 	dc := &dynamicCacheMock{}
 
@@ -474,7 +473,7 @@ func newControllerAndMocks() (
 		newObjectSetPhase: newGenericObjectSetPhase,
 		client:            c,
 		log:               ctrl.Log.WithName("controllers"),
-		scheme:            scheme,
+		scheme:            testutil.Scheme,
 		dynamicCache:      dc,
 	}
 	pr := &objectSetPhasesReconcilerMock{}

@@ -7,12 +7,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	corev1alpha1 "package-operator.run/apis/core/v1alpha1"
+	"package-operator.run/internal/testutil"
 )
 
 func TestGenericObjectSetPhase(t *testing.T) {
 	t.Parallel()
 
-	objectSet := newGenericObjectSetPhase(testScheme).(*GenericObjectSetPhase)
+	objectSet := newGenericObjectSetPhase(testutil.Scheme).(*GenericObjectSetPhase)
 
 	co := objectSet.ClientObject()
 	assert.IsType(t, &corev1alpha1.ObjectSetPhase{}, co)
@@ -57,7 +58,7 @@ func TestGenericObjectSetPhase(t *testing.T) {
 
 func TestGenericClusterObjectSetPhase(t *testing.T) {
 	t.Parallel()
-	objectSet := newGenericClusterObjectSetPhase(testScheme).(*GenericClusterObjectSetPhase)
+	objectSet := newGenericClusterObjectSetPhase(testutil.Scheme).(*GenericClusterObjectSetPhase)
 
 	co := objectSet.ClientObject()
 	assert.IsType(t, &corev1alpha1.ClusterObjectSetPhase{}, co)

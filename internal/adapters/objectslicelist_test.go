@@ -7,12 +7,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	corev1alpha1 "package-operator.run/apis/core/v1alpha1"
+	"package-operator.run/internal/testutil"
 )
 
 func TestObjectSliceList(t *testing.T) {
 	t.Parallel()
 
-	sliceList := NewObjectSliceList(testScheme).(*ObjectSliceList)
+	sliceList := NewObjectSliceList(testutil.Scheme).(*ObjectSliceList)
 	assert.IsType(t, &corev1alpha1.ObjectSliceList{}, sliceList.ClientObjectList())
 
 	sliceList.Items = []corev1alpha1.ObjectSlice{
@@ -29,7 +30,7 @@ func TestObjectSliceList(t *testing.T) {
 func TestClusterObjectSliceList(t *testing.T) {
 	t.Parallel()
 
-	sliceList := NewClusterObjectSliceList(testScheme).(*ClusterObjectSliceList)
+	sliceList := NewClusterObjectSliceList(testutil.Scheme).(*ClusterObjectSliceList)
 	assert.IsType(t, &corev1alpha1.ClusterObjectSliceList{}, sliceList.ClientObjectList())
 
 	sliceList.Items = []corev1alpha1.ClusterObjectSlice{

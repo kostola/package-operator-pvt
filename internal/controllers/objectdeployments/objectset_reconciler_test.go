@@ -91,7 +91,7 @@ func Test_ObjectSetReconciler(t *testing.T) {
 			client := testCase.client
 
 			// Setup reconciler
-			deploymentController := NewObjectDeploymentController(client, logr.Discard(), testScheme)
+			deploymentController := NewObjectDeploymentController(client, logr.Discard(), testutil.Scheme)
 			mockedSubreconciler := &objectSetSubReconcilerMock{}
 
 			mockedSubreconciler.On(
@@ -200,7 +200,7 @@ func makeObjectDeploymentMock(name string, namespace string,
 			Generation: generation,
 		},
 	}
-	GVK, err := apiutil.GVKForObject(obj, testScheme)
+	GVK, err := apiutil.GVKForObject(obj, testutil.Scheme)
 	if err != nil {
 		panic(err)
 	}
