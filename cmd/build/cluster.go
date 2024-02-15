@@ -55,6 +55,21 @@ endpoint = ["http://localhost:31320"]`, "quay.io"),
 	}
 }
 
+func NewHypershiftHostedCluster(name string, mgmtIPv4 string) *Cluster {
+	return &Cluster{
+		kind.NewCluster(name,
+			kind.WithClusterConfig(kindv1alpha4.Cluster{
+				ContainerdConfigPatches: []string{
+					// Replace `imageRegistry` with our local dev-registry.
+					fmt.Sprintf(`[plugins."io.containerd.grpc.v1.cri".registry.mirrors."%s"]
+endpoint = ["http://%s:31320"]`, "quay.io", mgmtIPv4),
+				},
+				Nodes: []kindv1alpha4.Node{{Role: kindv1alpha4.ControlPlaneRole}},
+			}),
+		),
+	}
+}
+
 // Creates the local development cluster.
 func (c *Cluster) create(ctx context.Context) error {
 	self := run.Meth(c, c.create)
