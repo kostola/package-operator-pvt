@@ -659,7 +659,7 @@ metadata:
   name: example
   namespace: default
 spec:
-  image: dolor
+  image: nonumy
 status:
   phase: Pending
 
