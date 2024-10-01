@@ -40,19 +40,22 @@ type GenericRepositoryController struct {
 func NewRepositoryController(
 	c client.Client, log logr.Logger, scheme *runtime.Scheme, store packages.RepositoryStore,
 ) *GenericRepositoryController {
-	return newGenericRepositoryController(adapters.NewGenericRepository, c, log, scheme, store)
+	return newGenericRepositoryController(adapters.NewGenericRepository,
+		c, log, scheme, &CraneRepoRetriever{}, store)
 }
 
 func NewClusterRepositoryController(
 	c client.Client, log logr.Logger, scheme *runtime.Scheme, store packages.RepositoryStore,
 ) *GenericRepositoryController {
-	return newGenericRepositoryController(adapters.NewGenericClusterRepository, c, log, scheme, store)
+	return newGenericRepositoryController(adapters.NewGenericClusterRepository,
+		c, log, scheme, &CraneRepoRetriever{}, store)
 }
 
 func newGenericRepositoryController(
 	newRepository adapters.GenericRepositoryFactory,
 	client client.Client, log logr.Logger,
-	scheme *runtime.Scheme, store packages.RepositoryStore,
+	scheme *runtime.Scheme,
+	retriever RepoRetriever, store packages.RepositoryStore,
 ) *GenericRepositoryController {
 	var boCfg controllers.BackoffConfig
 	boCfg.Default()
@@ -62,7 +65,7 @@ func newGenericRepositoryController(
 		client:        client,
 		log:           log,
 		scheme:        scheme,
-		retriever:     &CraneRepoRetriever{},
+		retriever:     retriever,
 		store:         store,
 		backoff:       boCfg.GetBackoff(),
 	}
@@ -103,6 +106,7 @@ func (c *GenericRepositoryController) Reconcile(ctx context.Context, req ctrl.Re
 	defer c.backoff.GC()
 
 	specHash := repo.GetSpecHash(c.packageHashModifier)
+	log.Info("amamamamama", "specHash", specHash)
 	if c.store.Contains(nsName) && repo.GetUnpackedHash() == specHash {
 		// We have already unpacked this repository \o/
 		log.Info("no changes")
