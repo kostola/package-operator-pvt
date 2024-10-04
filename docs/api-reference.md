@@ -660,6 +660,7 @@ metadata:
   namespace: default
 spec:
   image: nonumy
+  refreshInterval: eirmod
 status:
   phase: Pending
 
@@ -1249,6 +1250,7 @@ RepositorySpec specifies a repository.
 | Field | Description |
 | ----- | ----------- |
 | `image` <b>required</b><br>string | the image containing the contents of the repository |
+| `refreshInterval` <br>string |  |
 
 
 Used in:
@@ -1264,6 +1266,7 @@ RepositoryStatus defines the observed state of a Repository.
 | ----- | ----------- |
 | `conditions` <br>[]metav1.Condition | Conditions is a list of status conditions ths object is in. |
 | `phase` <br><a href="#repositorystatusphase">RepositoryStatusPhase</a> | This field is not part of any API contract<br>it will go away as soon as kubectl can print conditions!<br>When evaluating object state in code, use .Conditions instead. |
+| `imageDigest` <br>string | Digest of last successfully downloaded image |
 | `unpackedHash` <br>string | Hash of image + config that was successfully unpacked. |
 
 

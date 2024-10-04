@@ -23,6 +23,8 @@ import (
 	"package-operator.run/internal/controllers"
 )
 
+const defaultInterval = 15 * time.Minute
+
 // GenericRepositoryController reconciles both Repository and ClusterRepository objects.
 type GenericRepositoryController struct {
 	newRepository adapters.GenericRepositoryFactory
@@ -103,8 +105,33 @@ func (c *GenericRepositoryController) Reconcile(ctx context.Context, req ctrl.Re
 	defer c.backoff.GC()
 
 	specHash := repo.GetSpecHash(c.packageHashModifier)
-	if c.store.Contains(nsName) && repo.GetUnpackedHash() == specHash {
+	digest, err := c.retriever.Digest(repo.GetImage())
+	switch {
+	case errors.Is(err, ErrRepoRetrieverHead):
+		c.setStatusCondition(repo,
+			corev1alpha1.PackageUnpacked, metav1.ConditionFalse,
+			"ImagePullBackOff", err.Error())
+		res = ctrl.Result{RequeueAfter: c.nextBackoff(string(repo.ClientObject().GetUID()))}
+		return res, c.updateStatus(ctx, repo)
+
+	case err != nil:
+		return res, err
+	}
+
+	if c.store.Contains(nsName) && repo.GetUnpackedHash() == specHash && repo.GetImageDigest() == digest {
 		// We have already unpacked this repository \o/
+		interval, err := time.ParseDuration(repo.GetRefreshInterval())
+		if err != nil {
+			c.setStatusCondition(repo,
+				corev1alpha1.PackageInvalid, metav1.ConditionTrue,
+				"Invalid", err.Error())
+			return res, c.updateStatus(ctx, repo)
+		}
+		if interval <= 0 {
+			res = ctrl.Result{RequeueAfter: defaultInterval}
+		} else {
+			res = ctrl.Result{RequeueAfter: interval}
+		}
 		return res, nil
 	}
 
@@ -124,6 +151,7 @@ func (c *GenericRepositoryController) Reconcile(ctx context.Context, req ctrl.Re
 	default:
 		c.store.Store(idx, nsName)
 		repo.SetUnpackedHash(specHash)
+		repo.SetImageDigest(digest)
 		c.setStatusCondition(repo,
 			corev1alpha1.PackageUnpacked, metav1.ConditionTrue,
 			"UnpackSuccess", "Unpack job succeeded")

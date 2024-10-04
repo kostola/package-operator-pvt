@@ -270,6 +270,11 @@ type mockRetriever struct {
 	mock.Mock
 }
 
+func (m *mockRetriever) Digest(ref string) (string, error) {
+	args := m.Called(ref)
+	return args.Get(0).(string), args.Error(1)
+}
+
 func (m *mockRetriever) Retrieve(ctx context.Context, image string) (*packages.RepositoryIndex, error) {
 	args := m.Called(ctx, image)
 	return args.Get(0).(*packages.RepositoryIndex), args.Error(1)

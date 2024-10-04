@@ -1,6 +1,8 @@
 package v1alpha1
 
-import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
 
 // RepositoryStatus defines the observed state of a Repository.
 type RepositoryStatus struct {
@@ -10,6 +12,8 @@ type RepositoryStatus struct {
 	// it will go away as soon as kubectl can print conditions!
 	// When evaluating object state in code, use .Conditions instead.
 	Phase RepositoryStatusPhase `json:"phase,omitempty"`
+	// Digest of last successfully downloaded image
+	ImageDigest string `json:"imageDigest,omitempty"`
 	// Hash of image + config that was successfully unpacked.
 	UnpackedHash string `json:"unpackedHash,omitempty"`
 }
@@ -49,5 +53,6 @@ const (
 type RepositorySpec struct {
 	// the image containing the contents of the repository
 	// +kubebuilder:validation:Required
-	Image string `json:"image"`
+	Image           string `json:"image"`
+	RefreshInterval string `json:"refreshInterval,omitempty"`
 }

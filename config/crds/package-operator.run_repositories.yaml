@@ -51,6 +51,8 @@ spec:
               image:
                 description: the image containing the contents of the repository
                 type: string
+              refreshInterval:
+                type: string
             required:
             - image
             type: object
@@ -130,6 +132,9 @@ spec:
                   - type
                   type: object
                 type: array
+              imageDigest:
+                description: Digest of last successfully downloaded image
+                type: string
               phase:
                 description: |-
                   This field is not part of any API contract

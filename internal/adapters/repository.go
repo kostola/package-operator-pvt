@@ -16,6 +16,9 @@ type GenericRepositoryAccessor interface {
 	UpdatePhase()
 	GetConditions() *[]metav1.Condition
 	GetImage() string
+	GetImageDigest() string
+	SetImageDigest(hash string)
+	GetRefreshInterval() string
 	GetSpecHash(repositoryHashModifier *int32) string
 	GetUnpackedHash() string
 	SetUnpackedHash(hash string)
@@ -80,6 +83,18 @@ func (a *GenericRepository) GetImage() string {
 	return a.Spec.Image
 }
 
+func (a *GenericRepository) GetImageDigest() string {
+	return a.Status.ImageDigest
+}
+
+func (a *GenericRepository) SetImageDigest(hash string) {
+	a.Status.ImageDigest = hash
+}
+
+func (a *GenericRepository) GetRefreshInterval() string {
+	return a.Spec.RefreshInterval
+}
+
 func (a *GenericRepository) GetSpecHash(repositoryHashModifier *int32) string {
 	return utils.ComputeSHA256Hash(a.Spec, repositoryHashModifier)
 }
@@ -118,6 +133,18 @@ func (a *GenericClusterRepository) UpdatePhase() {
 
 func (a *GenericClusterRepository) GetImage() string {
 	return a.Spec.Image
+}
+
+func (a *GenericClusterRepository) GetImageDigest() string {
+	return a.Status.ImageDigest
+}
+
+func (a *GenericClusterRepository) SetImageDigest(hash string) {
+	a.Status.ImageDigest = hash
+}
+
+func (a *GenericClusterRepository) GetRefreshInterval() string {
+	return a.Spec.RefreshInterval
 }
 
 func (a *GenericClusterRepository) GetSpecHash(repositoryHashModifier *int32) string {
