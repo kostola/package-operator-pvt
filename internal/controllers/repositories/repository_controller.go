@@ -118,15 +118,16 @@ func (c *GenericRepositoryController) Reconcile(ctx context.Context, req ctrl.Re
 		return res, err
 	}
 
+	interval, err := time.ParseDuration(repo.GetRefreshInterval())
+	if err != nil {
+		c.setStatusCondition(repo,
+			corev1alpha1.PackageInvalid, metav1.ConditionTrue,
+			"Invalid", err.Error())
+		return res, c.updateStatus(ctx, repo)
+	}
+
 	if c.store.Contains(nsName) && repo.GetUnpackedHash() == specHash && repo.GetImageDigest() == digest {
 		// We have already unpacked this repository \o/
-		interval, err := time.ParseDuration(repo.GetRefreshInterval())
-		if err != nil {
-			c.setStatusCondition(repo,
-				corev1alpha1.PackageInvalid, metav1.ConditionTrue,
-				"Invalid", err.Error())
-			return res, c.updateStatus(ctx, repo)
-		}
 		if interval <= 0 {
 			res = ctrl.Result{RequeueAfter: defaultInterval}
 		} else {
